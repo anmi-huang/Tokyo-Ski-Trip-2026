@@ -1,0 +1,899 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>🇯🇵 東京 & 湯澤滑雪 2026</title>
+<style>
+  :root {
+    --pink: #e8748a; --pink-light: #fde8ec;
+    --blue: #3a7bd5; --blue-light: #e8f0fc;
+    --snow: #f0f6ff; --dark: #2d3142; --gray: #8892a4;
+    --border: #e2e8f0; --green: #27ae60; --red: #e74c3c;
+    --radius: 14px; --shadow: 0 2px 12px rgba(0,0,0,0.08);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system,"PingFang TC","Microsoft JhengHei",sans-serif; background:#f5f7fa; color:var(--dark); }
+
+  .header { background:linear-gradient(135deg,#e8748a 0%,#3a7bd5 100%); color:white; padding:24px 16px 16px; text-align:center; }
+  .header h1 { font-size:1.4rem; font-weight:700; }
+  .header p { font-size:0.85rem; opacity:0.9; margin-top:4px; }
+  .trip-info { display:flex; justify-content:center; gap:12px; margin-top:12px; flex-wrap:wrap; }
+  .trip-badge { background:rgba(255,255,255,0.2); border-radius:20px; padding:4px 12px; font-size:0.8rem; }
+
+  .tabs { display:flex; background:white; border-bottom:1px solid var(--border); position:sticky; top:0; z-index:100; }
+  .tab { flex:1; padding:12px 4px; text-align:center; font-size:0.82rem; color:var(--gray); cursor:pointer; border-bottom:3px solid transparent; transition:all 0.2s; font-weight:500; }
+  .tab.active { color:var(--pink); border-bottom-color:var(--pink); }
+
+  .page { display:none; padding:0 0 80px; }
+  .page.active { display:block; }
+
+  /* DAY CARDS */
+  .day-section { margin:12px 12px 0; }
+  .day-header { display:flex; align-items:center; gap:10px; background:var(--dark); color:white; padding:10px 14px; border-radius:var(--radius) var(--radius) 0 0; font-weight:700; }
+  .day-badge { background:var(--pink); border-radius:8px; padding:2px 10px; font-size:0.85rem; }
+  .day-subtitle { font-size:0.8rem; opacity:0.75; font-weight:400; }
+  .day-body { background:white; border-radius:0 0 var(--radius) var(--radius); overflow:hidden; margin-bottom:8px; }
+
+  .schedule-item { display:flex; align-items:flex-start; gap:10px; padding:11px 14px; border-bottom:1px solid #f0f0f0; cursor:pointer; transition:background 0.15s; position:relative; }
+  .schedule-item:last-child { border-bottom:none; }
+  .schedule-item:active { background:#f8f8f8; }
+  .schedule-item.has-map::after { content:"›"; position:absolute; right:14px; top:50%; transform:translateY(-50%); color:var(--gray); font-size:1.2rem; }
+  .time-col { min-width:44px; font-size:0.78rem; color:var(--gray); font-weight:600; padding-top:2px; }
+  .item-content { flex:1; padding-right:14px; }
+  .item-place { font-weight:600; font-size:0.92rem; color:var(--dark); }
+  .item-activity { font-size:0.82rem; color:var(--blue); margin-top:2px; }
+  .item-note { font-size:0.78rem; color:var(--gray); margin-top:3px; line-height:1.4; }
+  .item-transport { font-size:0.75rem; background:var(--blue-light); color:var(--blue); border-radius:6px; padding:2px 7px; display:inline-block; margin-top:4px; }
+  .item-icon { font-size:1.1rem; padding-top:1px; }
+  .highlight-row { background:var(--pink-light); }
+  .flight-row { background:var(--snow); }
+
+  /* BOTTOM SHEET */
+  .overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.45); z-index:200; }
+  .overlay.show { display:block; }
+  .sheet { position:fixed; bottom:0; left:0; right:0; background:white; border-radius:20px 20px 0 0; z-index:201; padding:0 0 env(safe-area-inset-bottom,16px); transform:translateY(100%); transition:transform 0.3s cubic-bezier(0.32,0.72,0,1); max-height:85vh; overflow-y:auto; }
+  .sheet.show { transform:translateY(0); }
+  .sheet-handle { width:40px; height:4px; background:#ddd; border-radius:2px; margin:12px auto 0; }
+  .sheet-header { padding:14px 18px 10px; border-bottom:1px solid var(--border); }
+  .sheet-icon-row { display:flex; align-items:center; gap:10px; }
+  .sheet-emoji { font-size:1.6rem; }
+  .sheet-place { font-weight:700; font-size:1.05rem; }
+  .sheet-activity { font-size:0.82rem; color:var(--blue); margin-top:3px; }
+  .sheet-body { padding:14px 18px; display:flex; flex-direction:column; gap:12px; }
+  .info-row { display:flex; gap:10px; align-items:flex-start; }
+  .info-icon { font-size:1rem; min-width:22px; margin-top:1px; }
+  .info-content { flex:1; }
+  .info-label { font-size:0.72rem; color:var(--gray); font-weight:600; text-transform:uppercase; letter-spacing:0.5px; }
+  .info-text { font-size:0.88rem; margin-top:3px; line-height:1.5; }
+  .map-btn { display:flex; align-items:center; justify-content:center; gap:8px; background:linear-gradient(135deg,var(--pink),var(--blue)); color:white; border:none; border-radius:12px; padding:13px; font-size:0.95rem; font-weight:700; cursor:pointer; width:100%; text-decoration:none; }
+  .sheet-actions { padding:0 18px 18px; }
+  .close-btn { width:100%; padding:12px; background:#f5f5f5; border:none; border-radius:12px; color:var(--gray); font-size:0.9rem; cursor:pointer; margin-top:8px; }
+
+  /* EXPENSE */
+  .section { padding:12px 12px 0; }
+  .card { background:white; border-radius:var(--radius); box-shadow:var(--shadow); overflow:hidden; margin-bottom:12px; }
+  .card-title { padding:12px 14px; font-weight:700; font-size:0.9rem; border-bottom:1px solid var(--border); }
+  .card-body { padding:14px; }
+  .people-setup { display:flex; flex-direction:column; gap:10px; }
+  .count-row { display:flex; align-items:center; gap:10px; }
+  .count-row label { font-size:0.85rem; color:var(--gray); flex:1; }
+  .count-ctrl { display:flex; align-items:center; gap:8px; }
+  .count-btn { width:32px; height:32px; border:2px solid var(--border); border-radius:8px; background:white; font-size:1.1rem; cursor:pointer; display:flex; align-items:center; justify-content:center; }
+  .count-num { font-weight:700; font-size:1.1rem; min-width:28px; text-align:center; }
+  .people-names { display:flex; flex-wrap:wrap; gap:8px; }
+  .name-chip { display:flex; align-items:center; gap:6px; background:var(--blue-light); border-radius:20px; padding:4px 12px; }
+  .name-chip input { border:none; background:transparent; font-size:0.85rem; color:var(--dark); width:60px; outline:none; }
+  .form-row { display:flex; flex-direction:column; gap:10px; }
+  .form-group { display:flex; flex-direction:column; gap:4px; }
+  .form-label { font-size:0.78rem; color:var(--gray); font-weight:600; }
+  .form-input,.form-select { border:1.5px solid var(--border); border-radius:10px; padding:9px 12px; font-size:0.9rem; color:var(--dark); outline:none; width:100%; background:white; }
+  .form-input:focus,.form-select:focus { border-color:var(--pink); }
+  .form-row-2 { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+  .split-options { display:flex; flex-wrap:wrap; gap:6px; margin-top:4px; }
+  .split-toggle { padding:5px 12px; border-radius:20px; border:1.5px solid var(--border); font-size:0.8rem; cursor:pointer; background:white; transition:all 0.2s; }
+  .split-toggle.active { background:var(--pink); border-color:var(--pink); color:white; }
+  .btn { padding:11px; border-radius:10px; border:none; font-size:0.9rem; font-weight:700; cursor:pointer; width:100%; }
+  .btn-primary { background:linear-gradient(135deg,var(--pink),var(--blue)); color:white; }
+  .btn-export { background:var(--green); color:white; margin-top:4px; }
+  .currency-row { display:flex; gap:8px; margin-bottom:10px; }
+  .curr-btn { flex:1; padding:8px; border-radius:8px; border:1.5px solid var(--border); background:white; font-size:0.85rem; font-weight:600; cursor:pointer; }
+  .curr-btn.active { background:var(--dark); color:white; border-color:var(--dark); }
+  .rate-row { display:flex; align-items:center; gap:8px; margin-bottom:12px; font-size:0.82rem; color:var(--gray); }
+  .rate-row input { width:70px; padding:5px 8px; border:1.5px solid var(--border); border-radius:8px; font-size:0.85rem; text-align:center; }
+  .filter-row { display:flex; gap:6px; overflow-x:auto; padding-bottom:4px; margin-bottom:10px; }
+  .filter-row::-webkit-scrollbar { display:none; }
+  .filter-chip { padding:5px 12px; border-radius:20px; border:1.5px solid var(--border); font-size:0.78rem; white-space:nowrap; cursor:pointer; background:white; }
+  .filter-chip.active { background:var(--dark); color:white; border-color:var(--dark); }
+  .expense-item { padding:12px 14px; border-bottom:1px solid #f5f5f5; }
+  .expense-item:last-child { border-bottom:none; }
+  .exp-top { display:flex; justify-content:space-between; align-items:flex-start; }
+  .exp-name { font-weight:600; font-size:0.9rem; }
+  .exp-amount { font-weight:700; font-size:1rem; color:var(--pink); }
+  .exp-meta { font-size:0.75rem; color:var(--gray); margin-top:3px; }
+  .exp-tags { display:flex; gap:6px; flex-wrap:wrap; margin-top:5px; }
+  .tag { font-size:0.72rem; padding:2px 8px; border-radius:10px; }
+  .tag-cat { background:var(--blue-light); color:var(--blue); }
+  .tag-person { background:#fff3e0; color:#e65100; }
+  .exp-del { background:none; border:none; color:var(--gray); font-size:1rem; cursor:pointer; padding:2px 6px; }
+  .empty-msg { text-align:center; color:var(--gray); font-size:0.85rem; padding:24px 0; }
+
+  /* STATS */
+  .stat-summary { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:12px; }
+  .stat-box { background:white; border-radius:var(--radius); padding:14px; text-align:center; box-shadow:var(--shadow); }
+  .stat-label { font-size:0.75rem; color:var(--gray); }
+  .stat-value { font-size:1.3rem; font-weight:700; margin-top:4px; }
+  .stat-value.pink { color:var(--pink); }
+  .person-stat { padding:12px 14px; border-bottom:1px solid #f5f5f5; }
+  .person-stat:last-child { border-bottom:none; }
+  .ps-top { display:flex; justify-content:space-between; align-items:center; }
+  .ps-name { font-weight:600; }
+  .ps-paid { font-size:0.85rem; color:var(--gray); }
+  .ps-balance { font-weight:700; font-size:0.95rem; }
+  .ps-balance.positive { color:var(--green); }
+  .ps-balance.negative { color:var(--red); }
+  .ps-bar-wrap { background:#f0f0f0; border-radius:4px; height:5px; margin-top:8px; }
+  .ps-bar { height:5px; border-radius:4px; background:linear-gradient(90deg,var(--pink),var(--blue)); }
+  .settle-item { padding:10px 14px; border-bottom:1px solid #f5f5f5; font-size:0.85rem; display:flex; align-items:center; gap:6px; }
+  .settle-item:last-child { border-bottom:none; }
+  .settle-arrow { color:var(--pink); }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>🇯🇵 東京 &amp; 湯澤滑雪</h1>
+  <p>2026 / 04 / 11 (六) — 04 / 18 (六)</p>
+  <div class="trip-info">
+    <span class="trip-badge">✈️ CX450/451</span>
+    <span class="trip-badge">🎿 Kagura</span>
+    <span class="trip-badge">♨️ KKR 湯澤雪國</span>
+    <span class="trip-badge">🏨 相鐵 FRESA INN</span>
+  </div>
+</div>
+
+<div class="tabs">
+  <div class="tab active" onclick="switchTab('itinerary')">📅 行程</div>
+  <div class="tab" onclick="switchTab('expense')">💴 記帳</div>
+  <div class="tab" onclick="switchTab('stats')">📊 統計</div>
+</div>
+
+<!-- ====== ITINERARY ====== -->
+<div class="page active" id="page-itinerary">
+
+  <!-- DAY 1 -->
+  <div class="day-section">
+    <div class="day-header"><span class="day-badge">Day 1</span><span>4/11 (六)</span><span class="day-subtitle">出發！飛往日本</span></div>
+    <div class="day-body">
+      <div class="schedule-item flight-row has-map" onclick="openSheet(this)"
+        data-emoji="✈️" data-place="桃園機場 T1" data-activity="CX450 起飛 13:00"
+        data-address="33000 台灣桃園市大園區航站南路9號"
+        data-transport="－"
+        data-maps="https://maps.google.com/?q=台灣桃園國際機場第一航廈">
+        <div class="time-col">13:00</div><div class="item-icon">✈️</div>
+        <div class="item-content"><div class="item-place">桃園機場 T1 起飛</div><div class="item-activity">CX450 — 出發！</div></div>
+      </div>
+      <div class="schedule-item flight-row has-map" onclick="openSheet(this)"
+        data-emoji="🛬" data-place="成田機場 T2" data-activity="CX450 抵達 17:15（東京時間）"
+        data-address="千葉県成田市三里塚御料牧場1-1"
+        data-transport="入境後前往 JR 成田特快 N'EX 搭乘處"
+        data-maps="https://maps.google.com/?q=成田国際空港第2ターミナル">
+        <div class="time-col">17:15</div><div class="item-icon">🛬</div>
+        <div class="item-content"><div class="item-place">成田機場 T2 抵達</div><div class="item-note">東京時間，時差 +1h</div></div>
+      </div>
+      <div class="schedule-item has-map" onclick="openSheet(this)"
+        data-emoji="🚆" data-place="成田特快 N'EX" data-activity="成田 → 東京站・60 分"
+        data-address="成田機場 T2 JR 站，B1F"
+        data-transport="入境後跟「成田エクスプレス」指標走，至 B1F 搭乘。建議事先網路預訂指定席。"
+        data-maps="https://maps.google.com/?q=成田空港第2ビル駅">
+        <div class="time-col">18:00</div><div class="item-icon">🚆</div>
+        <div class="item-content"><div class="item-place">成田 → 東京站</div><div class="item-transport">成田特快 N'EX・60 分</div><div class="item-note">建議預訂指定席</div></div>
+      </div>
+      <div class="schedule-item has-map" onclick="openSheet(this)"
+        data-emoji="🚄" data-place="上越新幹線" data-activity="東京站 → 越後湯澤・約 1.5h"
+        data-address="東京都千代田区丸の内1-9-1（東京站）"
+        data-transport="東京站到達後，前往新幹線 16-22 月台（中央通路附近），搭乘「とき」或「たにがわ」號，指定席建議事先預約。"
+        data-maps="https://maps.google.com/?q=東京駅新幹線">
+        <div class="time-col">19:30</div><div class="item-icon">🚄</div>
+        <div class="item-content"><div class="item-place">東京站 → 越後湯澤</div><div class="item-transport">上越新幹線 Max/谷川號・1.5h</div><div class="item-note">指定席建議預約</div></div>
+      </div>
+      <div class="schedule-item highlight-row has-map" onclick="openSheet(this)"
+        data-emoji="♨️" data-place="KKR 湯澤雪國溫泉飯店" data-activity="Check-in ／ 溫泉"
+        data-address="〒949-6101 新潟県南魚沼郡湯沢町湯沢2427-1"
+        data-transport="越後湯澤站東口出站，步行約 8 分鐘，或搭乘飯店接送（請事先確認）。"
+        data-maps="https://maps.google.com/?q=KKR湯沢ゆきぐに+新潟県南魚沼郡湯沢町湯沢2427-1">
+        <div class="time-col">21:00</div><div class="item-icon">♨️</div>
+        <div class="item-content"><div class="item-place">KKR 湯澤雪國溫泉飯店</div><div class="item-activity">Check-in / 溫泉</div><div class="item-note">有溫泉！附近有 7-11</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- DAY 2 -->
+  <div class="day-section">
+    <div class="day-header"><span class="day-badge">Day 2</span><span>4/12 (日)</span><span class="day-subtitle">🎿 Kagura 滑雪 Day 1</span></div>
+    <div class="day-body">
+      <div class="schedule-item has-map" onclick="openSheet(this)"
+        data-emoji="🚌" data-place="飯店 → Kagura 接駁" data-activity="巴士・35 分"
+        data-address="KKR 湯澤雪國溫泉飯店 大廳集合"
+        data-transport="在飯店大廳搭乘接駁巴士，請事先確認發車時間（約 09:00）。"
+        data-maps="https://maps.google.com/?q=KKR湯沢ゆきぐに+新潟県南魚沼郡湯沢町湯沢2427-1">
+        <div class="time-col">09:00</div><div class="item-icon">🚌</div>
+        <div class="item-content"><div class="item-place">飯店 → Kagura</div><div class="item-transport">接駁巴士・35 分</div><div class="item-note">需確認接駁時間</div></div>
+      </div>
+      <div class="schedule-item highlight-row has-map" onclick="openSheet(this)"
+        data-emoji="⛷️" data-place="Kagura Ski Resort" data-activity="滑雪整天・5.5h"
+        data-address="〒949-6212 新潟県南魚沼郡湯沢町三俣686"
+        data-transport="從飯店搭接駁巴士直達，車程約 35 分。或在越後湯澤站搭乘 GALA 湯澤方向巴士。"
+        data-maps="https://maps.google.com/?q=かぐらスキー場+新潟県南魚沼郡湯沢町三俣686">
+        <div class="time-col">09:30</div><div class="item-icon">⛷️</div>
+        <div class="item-content"><div class="item-place">Kagura Ski Resort</div><div class="item-activity">滑雪整天・5.5h</div><div class="item-note">高海拔雪質好，含午餐</div></div>
+      </div>
+      <div class="schedule-item">
+        <div class="time-col">15:00</div><div class="item-icon">🚌</div>
+        <div class="item-content"><div class="item-place">Kagura → 湯澤（返回）</div><div class="item-transport">接駁巴士・35 分</div><div class="item-note">回飯店泡溫泉</div></div>
+      </div>
+      <div class="schedule-item has-map" onclick="openSheet(this)"
+        data-emoji="🍜" data-place="湯澤市區晚餐" data-activity="溫泉料理 / 蕎麥麵"
+        data-address="新潟県南魚沼郡湯沢町湯沢（越後湯沢駅周辺）"
+        data-transport="越後湯澤站步行範圍內，建議至站前商店街尋找餐廳。"
+        data-maps="https://maps.google.com/?q=越後湯沢駅+周辺+レストラン">
+        <div class="time-col">18:00</div><div class="item-icon">🍜</div>
+        <div class="item-content"><div class="item-place">湯澤市區晚餐</div><div class="item-note">溫泉料理 / 蕎麥麵</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- DAY 3 -->
+  <div class="day-section">
+    <div class="day-header"><span class="day-badge">Day 3</span><span>4/13 (一)</span><span class="day-subtitle">🎿 Kagura Day 2 → 移動東京</span></div>
+    <div class="day-body">
+      <div class="schedule-item">
+        <div class="time-col">09:00</div><div class="item-icon">🚌</div>
+        <div class="item-content"><div class="item-place">飯店 → Kagura（退房寄行李）</div><div class="item-transport">巴士・35 分</div></div>
+      </div>
+      <div class="schedule-item highlight-row has-map" onclick="openSheet(this)"
+        data-emoji="⛷️" data-place="Kagura Ski Resort" data-activity="滑雪整天・5.5h"
+        data-address="〒949-6212 新潟県南魚沼郡湯沢町三俣686"
+        data-transport="從飯店搭接駁巴士直達。"
+        data-maps="https://maps.google.com/?q=かぐらスキー場+新潟県南魚沼郡湯沢町三俣686">
+        <div class="time-col">09:30</div><div class="item-icon">⛷️</div>
+        <div class="item-content"><div class="item-place">Kagura Ski Resort</div><div class="item-activity">滑雪整天・5.5h</div><div class="item-note">含午餐</div></div>
+      </div>
+      <div class="schedule-item">
+        <div class="time-col">15:00</div><div class="item-icon">🚌</div>
+        <div class="item-content"><div class="item-place">Kagura → 越後湯澤站（取行李）</div><div class="item-transport">巴士・35 分</div><div class="item-note">準備移動東京</div></div>
+      </div>
+      <div class="schedule-item has-map" onclick="openSheet(this)"
+        data-emoji="🚄" data-place="越後湯澤 → 上野" data-activity="上越新幹線・1h20"
+        data-address="〒949-6101 新潟県南魚沼郡湯沢町湯沢（越後湯沢駅）"
+        data-transport="越後湯沢駅 新幹線月台搭乘「たにがわ」或「とき」，在上野駅下車。"
+        data-maps="https://maps.google.com/?q=越後湯沢駅">
+        <div class="time-col">15:30</div><div class="item-icon">🚄</div>
+        <div class="item-content"><div class="item-place">湯澤 → 上野</div><div class="item-transport">上越新幹線・1h20</div><div class="item-note">指定席建議預約</div></div>
+      </div>
+      <div class="schedule-item has-map" onclick="openSheet(this)"
+        data-emoji="🏨" data-place="相鐵 FRESA INN 上野御徒町" data-activity="Check-in"
+        data-address="〒110-0005 東京都台東区上野5-2-4"
+        data-transport="上野駅（JR・地鐵）出口步行約 3-5 分，從「不忍口」或「7番出口」方向步行最近。"
+        data-maps="https://maps.google.com/?q=相鉄フレッサイン東京上野御徒町+東京都台東区上野5-2-4">
+        <div class="time-col">17:00</div><div class="item-icon">🏨</div>
+        <div class="item-content"><div class="item-place">相鐵 FRESA INN 上野御徒町</div><div class="item-activity">Check-in</div><div class="item-note">全家便利商店在樓下</div></div>
+      </div>
+      <div class="schedule-item has-map" onclick="openSheet(this)"
+        data-emoji="🥩" data-place="牛かつ もと村 秋葉原店" data-activity="炸牛排晚餐・2h"
+        data-address="〒101-0021 東京都千代田区外神田3-10-5"
+        data-transport="飯店步行約 12 分。或搭 JR 山手線/京浜東北線至秋葉原站，西口出站步行 5 分。"
+        data-maps="https://maps.google.com/?q=牛かつもと村+秋葉原店+東京都千代田区外神田3-10-5">
+        <div class="time-col">18:30</div><div class="item-icon">🥩</div>
+        <div class="item-content"><div class="item-place">秋葉原炸牛排（牛かつ もと村）</div><div class="item-activity">晚餐・2h</div><div class="item-note">排隊名店，早點去</div></div>
+      </div>
+      <div class="schedule-item has-map" onclick="openSheet(this)"
+        data-emoji="🎮" data-place="TAITO Station 秋葉原" data-activity="電玩中心・2h"
+        data-address="〒101-0021 東京都千代田区外神田1-11-5"
+        data-transport="秋葉原站電気街口出站，步行約 3 分。"
+        data-maps="https://maps.google.com/?q=タイトーステーション秋葉原+東京都千代田区外神田1-11-5">
+        <div class="time-col">20:30</div><div class="item-icon">🎮</div>
+        <div class="item-content"><div class="item-place">TAITO Station 電玩中心</div><div class="item-activity">2h</div><div class="item-note">夾娃娃機 / 節奏遊戲</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- DAY 4 -->
+  <div class="day-section">
+    <div class="day-header"><span class="day-badge">Day 4</span><span>4/14 (二)</span><span class="day-subtitle">法輪寺・新宿・SOMPO</span></div>
+    <div class="day-body">
+      <div class="schedule-item has-map" onclick="openSheet(this)"
+        data-emoji="⛩️" data-place="法輪寺（早稻田）" data-activity="花手水參觀・45 分"
+        data-address="〒162-0051 東京都新宿区西早稲田1-1-15"
+        data-transport="飯店 → 御徒町站，搭銀座線至末廣町，再轉東西線至早稲田站，步行約 5 分。或搭都バス直達。共約 40 分。"
+        data-maps="https://maps.google.com/?q=法輪寺+東京都新宿区西早稲田1-1-15">
+        <div class="time-col">09:30</div><div class="item-icon">⛩️</div>
+        <div class="item-content"><div class="item-place">法輪寺（早稻田）</div><div class="item-activity">參觀・45 分</div><div class="item-transport">地鐵・約 40 分</div><div class="item-note">超美花手水，必拍！</div></div>
+      </div>
+      <div class="schedule-item has-map" onclick="openSheet(this)"
+        data-emoji="📖" data-place="東京堂書店" data-activity="設計文具・1h"
+        data-address="〒101-0051 東京都千代田区神田神保町1-17"
+        data-transport="早稻田站 → 搭東西線至九段下，步行約 10 分；或直接搭都バス。注意：週末公休。"
+        data-maps="https://maps.google.com/?q=東京堂書店+東京都千代田区神田神保町1-17">
+        <div class="time-col">11:50</div><div class="item-icon">📖</div>
+        <div class="item-content"><div class="item-place">東京堂</div><div class="item-activity">設計文具・1h</div><div class="item-transport">地鐵・20 分</div><div class="item-note">設計師天堂，週末公休注意</div></div>
+      </div>
+      <div class="schedule-item has-map" onclick="openSheet(this)"
+        data-emoji="🛍️" data-place="新宿（Alpen / atmos / Kiddyland）" data-activity="購物・2h"
+        data-address="東京都新宿区西新宿（新宿駅周辺）"
+        data-transport="九段下站搭丸之內線至新宿站，約 10 分。西口出站即達。"
+        data-maps="https://maps.google.com/?q=新宿駅西口">
+        <div class="time-col">13:30</div><div class="item-icon">🛍️</div>
+        <div class="item-content"><div class="item-place">新宿逛街 &amp; 藥妝</div><div class="item-activity">購物・2h</div><div class="item-transport">丸之內線・10 分</div><div class="item-note">Alpen / atmos / Kiddyland</div></div>
+      </div>
+      <div class="schedule-item highlight-row has-map" onclick="openSheet(this)"
+        data-emoji="🎨" data-place="SOMPO 美術館" data-activity="梵谷《向日葵》真跡・1h"
+        data-address="〒160-8338 東京都新宿区西新宿1-26-1"
+        data-transport="新宿站西口步行約 5 分，損保ジャパン本社ビル 42F。"
+        data-maps="https://maps.google.com/?q=SOMPO美術館+東京都新宿区西新宿1-26-1">
+        <div class="time-col">15:30</div><div class="item-icon">🎨</div>
+        <div class="item-content"><div class="item-place">SOMPO 美術館</div><div class="item-activity">美術館・1h</div><div class="item-transport">步行・5 分</div><div class="item-note">梵谷《向日葵》真跡！</div></div>
+      </div>
+      <div class="schedule-item has-map" onclick="openSheet(this)"
+        data-emoji="📷" data-place="北村相機店 新宿" data-activity="攝影器材・45 分"
+        data-address="〒160-0023 東京都新宿区西新宿1-18-2"
+        data-transport="SOMPO 美術館步行約 3 分。"
+        data-maps="https://maps.google.com/?q=キタムラ+新宿西口店+東京都新宿区西新宿1-18-2">
+        <div class="time-col">16:45</div><div class="item-icon">📷</div>
+        <div class="item-content"><div class="item-place">北村相機店</div><div class="item-activity">攝影器材・45 分</div><div class="item-note">二手相機齊全</div></div>
+      </div>
+      <div class="schedule-item has-map" onclick="openSheet(this)"
+        data-emoji="🥓" data-place="叙々苑 新宿グリーンタワービル店" data-activity="晚餐・2h"
+        data-address="〒163-0536 東京都新宿区西新宿1-6-1 新宿エルタワー36F"
+        data-transport="新宿站西口步行約 8 分，新宿 El Torre 36 樓。⚠️ 需提前 1 個月預約。"
+        data-maps="https://maps.google.com/?q=叙々苑+新宿エルタワー店+東京都新宿区西新宿1-6-1">
+        <div class="time-col">17:30</div><div class="item-icon">🥓</div>
+        <div class="item-content"><div class="item-place">敘敘苑</div><div class="item-activity">晚餐・2h</div><div class="item-note">⚠️ 需提前 1 個月預約</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- DAY 5 -->
+  <div class="day-section">
+    <div class="day-header"><span class="day-badge">Day 5</span><span>4/15 (三)</span><span class="day-subtitle">🗻 富士山一日遊</span></div>
+    <div class="day-body">
+      <div class="schedule-item highlight-row has-map" onclick="openSheet(this)"
+        data-emoji="🗻" data-place="富士山 五合目" data-activity="一日遊・11h"
+        data-address="静岡県富士宮市富士山（富士山五合目）"
+        data-transport="新宿站搭高速巴士「富士急ハイランド」方向，或搭乘一日遊團。帶防風外套，山上氣溫約 0–5°C。"
+        data-maps="https://maps.google.com/?q=富士山五合目">
+        <div class="time-col">08:00</div><div class="item-icon">🗻</div>
+        <div class="item-content"><div class="item-place">富士山全景一日遊</div><div class="item-activity">全天・11h</div><div class="item-note">帶防風外套，山上涼</div></div>
+      </div>
+      <div class="schedule-item has-map" onclick="openSheet(this)"
+        data-emoji="🍳" data-place="EGG BABY CAFE" data-activity="蛋料理晚餐・1.5h"
+        data-address="東京都渋谷区神南1-19-3（澀谷附近）"
+        data-transport="從回程地點搭 JR 至澀谷站，步行約 5-10 分。"
+        data-maps="https://maps.google.com/?q=EGG+BABY+CAFE+渋谷">
+        <div class="time-col">19:30</div><div class="item-icon">🍳</div>
+        <div class="item-content"><div class="item-place">EGG BABY CAFE</div><div class="item-activity">晚餐・1.5h</div><div class="item-note">蛋料理極有名</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- DAY 6 -->
+  <div class="day-section">
+    <div class="day-header"><span class="day-badge">Day 6</span><span>4/16 (四)</span><span class="day-subtitle">神社・teamLab・SHIBUYA SKY</span></div>
+    <div class="day-body">
+      <div class="schedule-item has-map" onclick="openSheet(this)"
+        data-emoji="⛩️" data-place="小網神社" data-activity="強運洗錢參觀・45 分"
+        data-address="〒103-0016 東京都中央区日本橋小網町16-23"
+        data-transport="飯店搭 JR 至秋葉原，換日比谷線至人形町站，步行約 5 分。共約 15 分。"
+        data-maps="https://maps.google.com/?q=小網神社+東京都中央区日本橋小網町16-23">
+        <div class="time-col">09:00</div><div class="item-icon">⛩️</div>
+        <div class="item-content"><div class="item-place">小網神社</div><div class="item-activity">參觀・45 分</div><div class="item-transport">日比谷線・15 分</div><div class="item-note">強運洗錢，早點去避人潮</div></div>
+      </div>
+      <div class="schedule-item has-map" onclick="openSheet(this)"
+        data-emoji="🍕" data-place="麻布台之丘・Pizza 4P's" data-activity="午餐・1.5h"
+        data-address="〒106-0031 東京都港区西麻布1-2-7（Pizza 4P's 西麻布）"
+        data-transport="人形町站搭日比谷線至神谷町站，步行約 10 分至麻布台ヒルズ。"
+        data-maps="https://maps.google.com/?q=Pizza+4Ps+西麻布+東京都港区西麻布1-2-7">
+        <div class="time-col">10:00</div><div class="item-icon">🍕</div>
+        <div class="item-content"><div class="item-place">麻布台之丘・Pizza 4P's</div><div class="item-activity">午餐・1.5h</div><div class="item-transport">日比谷線・15 分</div><div class="item-note">炸豬排河村也在附近</div></div>
+      </div>
+      <div class="schedule-item highlight-row has-map" onclick="openSheet(this)"
+        data-emoji="🌊" data-place="teamLab Borderless 麻布台之丘" data-activity="數位藝術館・2h"
+        data-address="〒106-0031 東京都港区虎ノ門5-9-1 麻布台ヒルズ ガーデンプラザ B B2-4F"
+        data-transport="神谷町站 1 號出口步行約 5 分，麻布台ヒルズ地下層。⚠️ 需事先預約指定場次。"
+        data-maps="https://maps.google.com/?q=チームラボボーダレス+麻布台ヒルズ">
+        <div class="time-col">11:30</div><div class="item-icon">🌊</div>
+        <div class="item-content"><div class="item-place">teamLab Borderless</div><div class="item-activity">數位藝術館・2h</div><div class="item-note">⚠️ 需預約指定場次</div></div>
+      </div>
+      <div class="schedule-item highlight-row has-map" onclick="openSheet(this)"
+        data-emoji="🌇" data-place="SHIBUYA SKY" data-activity="展望台・1.5h"
+        data-address="〒150-6145 東京都渋谷区渋谷2-24-12 渋谷スクランブルスクエア 46F"
+        data-transport="神谷町站搭日比谷線至澀谷站，直連渋谷スクランブルスクエア 14F 售票後搭電梯至 45F。⚠️ 建議預約日落前 1 小時入場。"
+        data-maps="https://maps.google.com/?q=SHIBUYA+SKY+渋谷スクランブルスクエア">
+        <div class="time-col">14:00</div><div class="item-icon">🌇</div>
+        <div class="item-content"><div class="item-place">SHIBUYA SKY</div><div class="item-activity">展望台・1.5h</div><div class="item-transport">地鐵・20 分</div><div class="item-note">預約日落前 1 小時入場</div></div>
+      </div>
+      <div class="schedule-item has-map" onclick="openSheet(this)"
+        data-emoji="🍜" data-place="山下本気うどん 道玄坂店" data-activity="烏龍麵・1h"
+        data-address="〒150-0043 東京都渋谷区道玄坂2-25-6"
+        data-transport="澀谷站步行約 5 分，沿道玄坂上行。"
+        data-maps="https://maps.google.com/?q=山下本気うどん+渋谷道玄坂店+東京都渋谷区道玄坂2-25-6">
+        <div class="time-col">15:45</div><div class="item-icon">🍜</div>
+        <div class="item-content"><div class="item-place">山下本氣烏龍麵</div><div class="item-activity">1h</div><div class="item-note">白色明太子奶油烏龍麵</div></div>
+      </div>
+      <div class="schedule-item has-map" onclick="openSheet(this)"
+        data-emoji="🛒" data-place="MEGA ドン・キホーテ 渋谷本店" data-activity="購物・1.5h"
+        data-address="〒150-0043 東京都渋谷区道玄坂1-16-5"
+        data-transport="澀谷站步行約 5 分，道玄坂往下走。"
+        data-maps="https://maps.google.com/?q=MEGAドン・キホーテ渋谷本店+東京都渋谷区道玄坂1-16-5">
+        <div class="time-col">16:45</div><div class="item-icon">🛒</div>
+        <div class="item-content"><div class="item-place">MEGA 唐吉訶德 澀谷</div><div class="item-activity">購物・1.5h</div><div class="item-note">零食 / 電器 / 美妝</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- DAY 7 -->
+  <div class="day-section">
+    <div class="day-header"><span class="day-badge">Day 7</span><span>4/17 (五)</span><span class="day-subtitle">上野・原宿・購物衝刺</span></div>
+    <div class="day-body">
+      <div class="schedule-item has-map" onclick="openSheet(this)"
+        data-emoji="🌳" data-place="上野公園" data-activity="公園・美術館・2h"
+        data-address="〒110-8716 東京都台東区上野公園"
+        data-transport="飯店步行約 10 分，或搭 JR 至上野站公園口出站即達。"
+        data-maps="https://maps.google.com/?q=上野公園+東京都台東区上野公園">
+        <div class="time-col">09:30</div><div class="item-icon">🌳</div>
+        <div class="item-content"><div class="item-place">上野公園</div><div class="item-activity">公園・美術館・2h</div><div class="item-note">兩美術館可選</div></div>
+      </div>
+      <div class="schedule-item has-map" onclick="openSheet(this)"
+        data-emoji="🥩" data-place="ねぎし 上野店" data-activity="厚切烤牛舌定食・1h"
+        data-address="〒110-0005 東京都台東区上野6-14-4 レフ上野 B1F"
+        data-transport="上野公園步行約 5 分，JR 上野站附近。"
+        data-maps="https://maps.google.com/?q=ねぎし+上野店+東京都台東区上野6-14-4">
+        <div class="time-col">11:30</div><div class="item-icon">🥩</div>
+        <div class="item-content"><div class="item-place">Negishi 牛舌</div><div class="item-activity">午餐・1h</div><div class="item-note">厚切烤牛舌定食</div></div>
+      </div>
+      <div class="schedule-item has-map" onclick="openSheet(this)"
+        data-emoji="🏕️" data-place="mont-bell 上野店" data-activity="戶外用品・1h"
+        data-address="〒110-0005 東京都台東区上野3-19-3 上野フロンティアタワー2F"
+        data-transport="JR 上野站步行約 1 分，上野フロンティアタワー 2F。"
+        data-maps="https://maps.google.com/?q=モンベル+上野店+東京都台東区上野3-19-3">
+        <div class="time-col">12:30</div><div class="item-icon">🏕️</div>
+        <div class="item-content"><div class="item-place">mont-bell 上野</div><div class="item-activity">戶外用品・1h</div><div class="item-note">東京最大分店</div></div>
+      </div>
+      <div class="schedule-item has-map" onclick="openSheet(this)"
+        data-emoji="🥞" data-place="neel 原宿" data-activity="可麗餅・30 分"
+        data-address="〒150-0001 東京都渋谷区神宮前1-14-30"
+        data-transport="上野站搭 JR 山手線至原宿站，竹下口出站步行約 3 分。"
+        data-maps="https://maps.google.com/?q=neel+原宿+東京都渋谷区神宮前1-14-30">
+        <div class="time-col">13:45</div><div class="item-icon">🥞</div>
+        <div class="item-content"><div class="item-place">neel 原宿・可麗餅</div><div class="item-activity">30 分</div><div class="item-transport">山手線・15 分</div><div class="item-note">梨子圖案標誌</div></div>
+      </div>
+      <div class="schedule-item has-map" onclick="openSheet(this)"
+        data-emoji="👕" data-place="BEAMS 原宿" data-activity="服飾・2h"
+        data-address="〒150-0001 東京都渋谷区神宮前3-25-15"
+        data-transport="原宿站步行約 5 分，神宮前エリア。"
+        data-maps="https://maps.google.com/?q=BEAMS+原宿+東京都渋谷区神宮前3-25-15">
+        <div class="time-col">14:15</div><div class="item-icon">👕</div>
+        <div class="item-content"><div class="item-place">BEAMS 服飾</div><div class="item-activity">2h</div><div class="item-note">神宮前一帶多店</div></div>
+      </div>
+      <div class="schedule-item has-map" onclick="openSheet(this)"
+        data-emoji="🏊" data-place="Speedo / arena 原宿" data-activity="泳具・1.5h"
+        data-address="〒150-0001 東京都渋谷区神宮前（キャットストリート沿い）"
+        data-transport="BEAMS 附近，神宮前キャットストリートエリア步行即達。"
+        data-maps="https://maps.google.com/?q=スピード+アリーナ+原宿+神宮前">
+        <div class="time-col">16:15</div><div class="item-icon">🏊</div>
+        <div class="item-content"><div class="item-place">Speedo / arena</div><div class="item-activity">運動用品・1.5h</div><div class="item-note">旗艦店</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- DAY 8 -->
+  <div class="day-section">
+    <div class="day-header"><span class="day-badge">Day 8</span><span>4/18 (六)</span><span class="day-subtitle">回家！</span></div>
+    <div class="day-body">
+      <div class="schedule-item has-map" onclick="openSheet(this)"
+        data-emoji="🧳" data-place="相鐵 FRESA INN 退房" data-activity="退房 / 收拾・1h"
+        data-address="〒110-0005 東京都台東区上野5-2-4"
+        data-transport="退房後步行至上野站（約 3-5 分）搭乘 Skyliner。"
+        data-maps="https://maps.google.com/?q=相鉄フレッサイン東京上野御徒町+東京都台東区上野5-2-4">
+        <div class="time-col">09:00</div><div class="item-icon">🧳</div>
+        <div class="item-content"><div class="item-place">相鐵 FRESA INN 退房</div><div class="item-activity">收拾・1h</div></div>
+      </div>
+      <div class="schedule-item has-map" onclick="openSheet(this)"
+        data-emoji="🚆" data-place="上野站 京成 Skyliner" data-activity="上野 → 成田・41 分"
+        data-address="〒110-0005 東京都台東区上野7-1-1（京成上野駅）"
+        data-transport="從飯店步行至京成上野站（約 5 分），搭乘 Skyliner。最晚 12:00 到達成田機場。"
+        data-maps="https://maps.google.com/?q=京成上野駅">
+        <div class="time-col">11:00</div><div class="item-icon">🚆</div>
+        <div class="item-content"><div class="item-place">上野 → 成田機場</div><div class="item-transport">京成 Skyliner・41 分</div><div class="item-note">最晚 12:00 到機場</div></div>
+      </div>
+      <div class="schedule-item flight-row has-map" onclick="openSheet(this)"
+        data-emoji="✈️" data-place="成田機場 T2 起飛" data-activity="CX451・座位 56J"
+        data-address="千葉県成田市三里塚御料牧場1-1 第2ターミナル"
+        data-transport="Skyliner 抵達後至 T2，辦理登機手續、過安檢。"
+        data-maps="https://maps.google.com/?q=成田国際空港第2ターミナル">
+        <div class="time-col">15:45</div><div class="item-icon">✈️</div>
+        <div class="item-content"><div class="item-place">成田機場 T2 起飛</div><div class="item-activity">CX451・座位 56J</div></div>
+      </div>
+      <div class="schedule-item flight-row">
+        <div class="time-col">18:25</div><div class="item-icon">🏠</div>
+        <div class="item-content"><div class="item-place">桃園機場 T1 抵達</div><div class="item-activity">旅程結束！</div></div>
+      </div>
+    </div>
+  </div>
+  <div style="height:20px"></div>
+</div>
+
+<!-- ====== EXPENSE ====== -->
+<div class="page" id="page-expense">
+  <div class="section">
+    <div class="card">
+      <div class="card-title">👥 旅伴設定</div>
+      <div class="card-body">
+        <div class="people-setup">
+          <div class="count-row">
+            <label>人數</label>
+            <div class="count-ctrl">
+              <button class="count-btn" onclick="changePeopleCount(-1)">－</button>
+              <span class="count-num" id="people-count">2</span>
+              <button class="count-btn" onclick="changePeopleCount(1)">＋</button>
+            </div>
+          </div>
+          <div class="people-names" id="people-names"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="section">
+    <div class="card">
+      <div class="card-title">💱 匯率設定</div>
+      <div class="card-body">
+        <div class="currency-row">
+          <button class="curr-btn active" id="curr-jpy" onclick="setCurrency('JPY')">日圓 JPY</button>
+          <button class="curr-btn" id="curr-twd" onclick="setCurrency('TWD')">台幣 TWD</button>
+        </div>
+        <div class="rate-row">
+          <span>1 TWD =</span>
+          <input type="number" id="rate-input" value="4.5" step="0.1" onchange="saveRate()">
+          <span>JPY</span>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="section">
+    <div class="card">
+      <div class="card-title">➕ 新增記帳</div>
+      <div class="card-body">
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">項目名稱</label>
+            <input class="form-input" id="exp-name" type="text" placeholder="例：敘敘苑晚餐">
+          </div>
+          <div class="form-row-2">
+            <div class="form-group">
+              <label class="form-label" id="amount-label">金額 (JPY)</label>
+              <input class="form-input" id="exp-amount" type="number" placeholder="0">
+            </div>
+            <div class="form-group">
+              <label class="form-label">類別</label>
+              <select class="form-select" id="exp-cat">
+                <option value="餐飲">🍜 餐飲</option>
+                <option value="交通">🚆 交通</option>
+                <option value="住宿">🏨 住宿</option>
+                <option value="購物">🛍️ 購物</option>
+                <option value="票券">🎟️ 票券</option>
+                <option value="其他">📦 其他</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">付款人</label>
+            <select class="form-select" id="exp-payer"></select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">分攤對象</label>
+            <div class="split-options" id="split-options"></div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">備註</label>
+            <input class="form-input" id="exp-note" type="text" placeholder="選填">
+          </div>
+          <button class="btn btn-primary" onclick="addExpense()">記帳</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="section">
+    <div class="card">
+      <div class="card-title">📋 支出記錄</div>
+      <div class="card-body" style="padding:0">
+        <div class="filter-row" style="padding:10px 14px 0">
+          <span class="filter-chip active" onclick="filterExpenses('全部',this)">全部</span>
+          <span class="filter-chip" onclick="filterExpenses('餐飲',this)">🍜 餐飲</span>
+          <span class="filter-chip" onclick="filterExpenses('交通',this)">🚆 交通</span>
+          <span class="filter-chip" onclick="filterExpenses('住宿',this)">🏨 住宿</span>
+          <span class="filter-chip" onclick="filterExpenses('購物',this)">🛍️ 購物</span>
+          <span class="filter-chip" onclick="filterExpenses('票券',this)">🎟️ 票券</span>
+          <span class="filter-chip" onclick="filterExpenses('其他',this)">📦 其他</span>
+        </div>
+        <div id="expense-list" style="margin-top:8px"><div class="empty-msg">還沒有記帳喔！</div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ====== STATS ====== -->
+<div class="page" id="page-stats">
+  <div class="section" style="padding-top:12px">
+    <div class="stat-summary">
+      <div class="stat-box"><div class="stat-label">總支出 (JPY)</div><div class="stat-value pink" id="stat-total-jpy">¥0</div></div>
+      <div class="stat-box"><div class="stat-label">總支出 (TWD)</div><div class="stat-value" id="stat-total-twd">NT$0</div></div>
+    </div>
+    <div class="card">
+      <div class="card-title">👤 每人支出</div>
+      <div id="person-stats"><div class="empty-msg">還沒有資料</div></div>
+    </div>
+    <div class="card">
+      <div class="card-title">💸 結算清單</div>
+      <div id="settlement-list"><div class="empty-msg">還沒有資料</div></div>
+    </div>
+    <div class="card">
+      <div class="card-title">📊 類別分析</div>
+      <div id="cat-stats"><div class="empty-msg">還沒有資料</div></div>
+    </div>
+    <div class="card">
+      <div class="card-title">📤 匯出資料</div>
+      <div class="card-body">
+        <button class="btn btn-export" onclick="exportCSV()">⬇️ 下載 CSV 表單</button>
+        <button class="btn" style="background:#3a7bd5;color:white;margin-top:8px" onclick="copyJSON()">📋 複製 JSON 資料</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ====== BOTTOM SHEET ====== -->
+<div class="overlay" id="overlay" onclick="closeSheet()"></div>
+<div class="sheet" id="sheet">
+  <div class="sheet-handle"></div>
+  <div class="sheet-header">
+    <div class="sheet-icon-row">
+      <span class="sheet-emoji" id="sh-emoji"></span>
+      <div>
+        <div class="sheet-place" id="sh-place"></div>
+        <div class="sheet-activity" id="sh-activity"></div>
+      </div>
+    </div>
+  </div>
+  <div class="sheet-body">
+    <div class="info-row">
+      <span class="info-icon">📍</span>
+      <div class="info-content">
+        <div class="info-label">地址</div>
+        <div class="info-text" id="sh-address"></div>
+      </div>
+    </div>
+    <div class="info-row">
+      <span class="info-icon">🚆</span>
+      <div class="info-content">
+        <div class="info-label">交通指引</div>
+        <div class="info-text" id="sh-transport"></div>
+      </div>
+    </div>
+  </div>
+  <div class="sheet-actions">
+    <a class="map-btn" id="sh-maps-btn" href="#" target="_blank">🗺️ 在 Google Maps 開啟</a>
+    <button class="close-btn" onclick="closeSheet()">關閉</button>
+  </div>
+</div>
+
+<script>
+// ====== SHEET ======
+function openSheet(el) {
+  const d = el.dataset;
+  document.getElementById('sh-emoji').textContent = d.emoji || '📍';
+  document.getElementById('sh-place').textContent = d.place || '';
+  document.getElementById('sh-activity').textContent = d.activity || '';
+  document.getElementById('sh-address').textContent = d.address || '－';
+  document.getElementById('sh-transport').textContent = d.transport || '－';
+  document.getElementById('sh-maps-btn').href = d.maps || '#';
+  document.getElementById('overlay').classList.add('show');
+  setTimeout(() => document.getElementById('sheet').classList.add('show'), 10);
+}
+function closeSheet() {
+  document.getElementById('sheet').classList.remove('show');
+  document.getElementById('overlay').classList.remove('show');
+}
+
+// ====== TABS ======
+function switchTab(name) {
+  document.querySelectorAll('.tab').forEach((t,i) => {
+    t.classList.toggle('active', ['itinerary','expense','stats'][i] === name);
+  });
+  document.querySelectorAll('.page').forEach(p => {
+    p.classList.toggle('active', p.id === 'page-' + name);
+  });
+  if (name === 'stats') renderStats();
+}
+
+// ====== STATE ======
+let state = JSON.parse(localStorage.getItem('trip_state') || 'null') || {
+  people: ['小明', '小美'], currency: 'JPY', rate: 4.5, expenses: []
+};
+function save() { localStorage.setItem('trip_state', JSON.stringify(state)); }
+
+// ====== PEOPLE ======
+function changePeopleCount(delta) {
+  const n = Math.max(1, Math.min(8, state.people.length + delta));
+  while (state.people.length < n) state.people.push('旅伴' + (state.people.length + 1));
+  while (state.people.length > n) state.people.pop();
+  save(); renderPeople();
+}
+function renderPeople() {
+  document.getElementById('people-count').textContent = state.people.length;
+  document.getElementById('people-names').innerHTML = state.people.map((p,i) =>
+    `<div class="name-chip"><input value="${p}" placeholder="姓名" onchange="renamePerson(${i},this.value)"></div>`).join('');
+  renderPayerSelect(); renderSplitOptions();
+}
+function renamePerson(i, name) {
+  state.people[i] = name || ('旅伴'+(i+1)); save(); renderPayerSelect(); renderSplitOptions();
+}
+function renderPayerSelect() {
+  const sel = document.getElementById('exp-payer');
+  if (sel) sel.innerHTML = state.people.map(p => `<option value="${p}">${p}</option>`).join('');
+}
+
+// ====== SPLIT ======
+let splitAll = true, splitSelected = new Set();
+function renderSplitOptions() {
+  const c = document.getElementById('split-options');
+  if (!c) return;
+  c.innerHTML = `<span class="split-toggle ${splitAll?'active':''}" onclick="toggleSplitAll()">全部</span>` +
+    state.people.map(p => `<span class="split-toggle ${!splitAll&&splitSelected.has(p)?'active':''}" onclick="toggleSplitPerson('${p}')">${p}</span>`).join('');
+}
+function toggleSplitAll() { splitAll=true; splitSelected=new Set(state.people); renderSplitOptions(); }
+function toggleSplitPerson(name) {
+  splitAll=false;
+  if(splitSelected.has(name)) splitSelected.delete(name); else splitSelected.add(name);
+  if(splitSelected.size===0) splitSelected=new Set(state.people);
+  renderSplitOptions();
+}
+
+// ====== CURRENCY ======
+function setCurrency(c) {
+  state.currency=c; save();
+  document.getElementById('curr-jpy').classList.toggle('active', c==='JPY');
+  document.getElementById('curr-twd').classList.toggle('active', c==='TWD');
+  document.getElementById('amount-label').textContent=`金額 (${c})`;
+}
+function saveRate() { state.rate=parseFloat(document.getElementById('rate-input').value)||4.5; save(); }
+function toJPY(a) { return state.currency==='TWD' ? Math.round(a*state.rate) : a; }
+function toTWD(j) { return Math.round(j/state.rate); }
+
+// ====== EXPENSE ======
+let currentFilter = '全部';
+function addExpense() {
+  const name=document.getElementById('exp-name').value.trim();
+  const amount=parseFloat(document.getElementById('exp-amount').value);
+  const cat=document.getElementById('exp-cat').value;
+  const payer=document.getElementById('exp-payer').value;
+  const note=document.getElementById('exp-note').value.trim();
+  if(!name||isNaN(amount)||amount<=0){alert('請填寫名稱與金額');return;}
+  const split=splitAll?[...state.people]:[...splitSelected];
+  state.expenses.push({id:Date.now(),name,amount:toJPY(amount),cat,payer,note,split,date:new Date().toLocaleDateString('zh-TW')});
+  save();
+  document.getElementById('exp-name').value='';
+  document.getElementById('exp-amount').value='';
+  document.getElementById('exp-note').value='';
+  renderExpenses();
+}
+function deleteExpense(id) { state.expenses=state.expenses.filter(e=>e.id!==id); save(); renderExpenses(); renderStats(); }
+function filterExpenses(cat,el) {
+  currentFilter=cat;
+  document.querySelectorAll('.filter-chip').forEach(c=>c.classList.remove('active'));
+  el.classList.add('active'); renderExpenses();
+}
+function renderExpenses() {
+  const list=currentFilter==='全部'?state.expenses:state.expenses.filter(e=>e.cat===currentFilter);
+  const c=document.getElementById('expense-list');
+  if(!list.length){c.innerHTML='<div class="empty-msg">沒有記錄</div>';return;}
+  c.innerHTML=[...list].reverse().map(e=>`
+    <div class="expense-item">
+      <div class="exp-top">
+        <div><div class="exp-name">${e.name}</div><div class="exp-meta">${e.date} · 付款：${e.payer}</div></div>
+        <div style="display:flex;align-items:center;gap:4px">
+          <div class="exp-amount">¥${e.amount.toLocaleString()}</div>
+          <button class="exp-del" onclick="deleteExpense(${e.id})">✕</button>
+        </div>
+      </div>
+      <div class="exp-tags">
+        <span class="tag tag-cat">${e.cat}</span>
+        ${e.split.map(p=>`<span class="tag tag-person">${p}</span>`).join('')}
+        ${e.note?`<span class="tag" style="background:#f0f0f0;color:#666">${e.note}</span>`:''}
+      </div>
+    </div>`).join('');
+}
+
+// ====== STATS ======
+function renderStats() {
+  const expenses=state.expenses;
+  const totalJPY=expenses.reduce((s,e)=>s+e.amount,0);
+  document.getElementById('stat-total-jpy').textContent='¥'+totalJPY.toLocaleString();
+  document.getElementById('stat-total-twd').textContent='NT$'+toTWD(totalJPY).toLocaleString();
+  const paid={},shouldPay={};
+  state.people.forEach(p=>{paid[p]=0;shouldPay[p]=0;});
+  expenses.forEach(e=>{
+    if(paid[e.payer]!==undefined) paid[e.payer]+=e.amount;
+    const share=e.amount/e.split.length;
+    e.split.forEach(p=>{if(shouldPay[p]!==undefined) shouldPay[p]+=share;});
+  });
+  const maxPaid=Math.max(...Object.values(paid),1);
+  const ps=document.getElementById('person-stats');
+  if(!expenses.length){ps.innerHTML='<div class="empty-msg">還沒有資料</div>';}
+  else {
+    ps.innerHTML=state.people.map(p=>{
+      const bal=paid[p]-shouldPay[p];
+      const cls=bal>=0?'positive':'negative';
+      const txt=bal>=0?`多付 ¥${Math.round(bal).toLocaleString()}`:`應收 ¥${Math.abs(Math.round(bal)).toLocaleString()}`;
+      const pct=Math.round(paid[p]/maxPaid*100);
+      return `<div class="person-stat">
+        <div class="ps-top"><div><div class="ps-name">${p}</div><div class="ps-paid">已付 ¥${Math.round(paid[p]).toLocaleString()} · 應付 ¥${Math.round(shouldPay[p]).toLocaleString()}</div></div>
+        <div class="ps-balance ${cls}">${txt}</div></div>
+        <div class="ps-bar-wrap"><div class="ps-bar" style="width:${pct}%"></div></div>
+      </div>`;
+    }).join('');
+  }
+  const balance={};
+  state.people.forEach(p=>{balance[p]=Math.round(paid[p]-shouldPay[p]);});
+  const creditors=state.people.filter(p=>balance[p]>0).sort((a,b)=>balance[b]-balance[a]);
+  const debtors=state.people.filter(p=>balance[p]<0).sort((a,b)=>balance[a]-balance[b]);
+  const settlements=[],bal={...balance};
+  let ci=0,di=0;
+  while(ci<creditors.length&&di<debtors.length){
+    const c=creditors[ci],d=debtors[di];
+    const amt=Math.min(bal[c],-bal[d]);
+    if(amt>0) settlements.push({from:d,to:c,amount:amt});
+    bal[c]-=amt;bal[d]+=amt;
+    if(bal[c]===0)ci++;if(bal[d]===0)di++;
+  }
+  const sl=document.getElementById('settlement-list');
+  if(!settlements.length){sl.innerHTML=`<div class="empty-msg">${expenses.length?'✅ 已平衡，不需要轉帳':'還沒有資料'}</div>`;}
+  else sl.innerHTML=settlements.map(s=>`
+    <div class="settle-item"><strong>${s.from}</strong><span class="settle-arrow">→</span><strong>${s.to}</strong>
+    <span style="margin-left:auto;color:var(--pink);font-weight:700">¥${s.amount.toLocaleString()} (NT$${toTWD(s.amount).toLocaleString()})</span></div>`).join('');
+  const cats={};
+  expenses.forEach(e=>{cats[e.cat]=(cats[e.cat]||0)+e.amount;});
+  const catEl=document.getElementById('cat-stats');
+  if(!Object.keys(cats).length){catEl.innerHTML='<div class="empty-msg">還沒有資料</div>';return;}
+  const icons={餐飲:'🍜',交通:'🚆',住宿:'🏨',購物:'🛍️',票券:'🎟️',其他:'📦'};
+  catEl.innerHTML=Object.entries(cats).sort((a,b)=>b[1]-a[1]).map(([cat,amt])=>{
+    const pct=Math.round(amt/totalJPY*100);
+    return `<div class="person-stat">
+      <div class="ps-top"><div class="ps-name">${icons[cat]||'📦'} ${cat}</div><div class="ps-balance">${pct}%</div></div>
+      <div style="font-size:0.8rem;color:var(--gray);margin-top:2px">¥${Math.round(amt).toLocaleString()} (NT$${toTWD(amt).toLocaleString()})</div>
+      <div class="ps-bar-wrap" style="margin-top:6px"><div class="ps-bar" style="width:${pct}%"></div></div>
+    </div>`;
+  }).join('');
+}
+
+// ====== EXPORT ======
+function exportCSV() {
+  const rows=[['日期','項目','類別','金額(JPY)','金額(TWD)','付款人','分攤對象','備註']];
+  state.expenses.forEach(e=>rows.push([e.date,e.name,e.cat,e.amount,toTWD(e.amount),e.payer,e.split.join('/'),e.note]));
+  const csv=rows.map(r=>r.map(v=>`"${String(v).replace(/"/g,'""')}"`).join(',')).join('\n');
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob(['\uFEFF'+csv],{type:'text/csv;charset=utf-8'}));
+  a.download='東京湯澤旅遊記帳.csv'; a.click();
+}
+function copyJSON() {
+  navigator.clipboard.writeText(JSON.stringify(state.expenses,null,2)).then(()=>alert('JSON 已複製！'));
+}
+
+// ====== INIT ======
+function init() {
+  renderPeople(); setCurrency(state.currency);
+  document.getElementById('rate-input').value=state.rate;
+  splitSelected=new Set(state.people); renderSplitOptions(); renderExpenses();
+}
+init();
+</script>
+</body>
+</html>
