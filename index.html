@@ -1,8 +1,651 @@
 <!DOCTYPE html>
-<html>
+<html lang="zh-TW">
 <head>
-<meta charset="utf-8">
-<meta http-equiv="refresh" content="0; url=行程表.html">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>🇯🇵 東京 & 湯澤滑雪 2026</title>
+<style>
+  :root {
+    --pink:#e8748a; --pink-light:#fde8ec;
+    --blue:#3a7bd5; --blue-light:#e8f0fc;
+    --snow:#f0f6ff; --dark:#2d3142; --gray:#8892a4;
+    --border:#e2e8f0; --green:#27ae60; --red:#e74c3c;
+    --radius:14px; --shadow:0 2px 12px rgba(0,0,0,0.08);
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:-apple-system,"PingFang TC","Microsoft JhengHei",sans-serif;background:#f5f7fa;color:var(--dark);}
+  .header{background:linear-gradient(135deg,#e8748a 0%,#3a7bd5 100%);color:white;padding:24px 16px 16px;text-align:center;}
+  .header h1{font-size:1.4rem;font-weight:700;}
+  .header p{font-size:0.85rem;opacity:0.9;margin-top:4px;}
+  .trip-info{display:flex;justify-content:center;gap:10px;margin-top:12px;flex-wrap:wrap;}
+  .trip-badge{background:rgba(255,255,255,0.2);border-radius:20px;padding:4px 12px;font-size:0.8rem;}
+  .tabs{display:flex;background:white;border-bottom:1px solid var(--border);position:sticky;top:0;z-index:100;}
+  .tab{flex:1;padding:12px 4px;text-align:center;font-size:0.82rem;color:var(--gray);cursor:pointer;border-bottom:3px solid transparent;font-weight:500;}
+  .tab.active{color:var(--pink);border-bottom-color:var(--pink);}
+  .page{display:none;padding:0 0 80px;}
+  .page.active{display:block;}
+
+  /* DAY */
+  .day-section{margin:12px 12px 0;}
+  .day-header{display:flex;align-items:center;gap:10px;background:var(--dark);color:white;padding:10px 14px;border-radius:var(--radius) var(--radius) 0 0;font-weight:700;}
+  .day-badge{background:var(--pink);border-radius:8px;padding:2px 10px;font-size:0.85rem;}
+  .day-subtitle{font-size:0.8rem;opacity:0.75;font-weight:400;flex:1;}
+  .day-add-btn{background:rgba(255,255,255,0.2);border:none;color:white;border-radius:8px;padding:3px 10px;font-size:0.8rem;cursor:pointer;}
+  .day-body{background:white;border-radius:0 0 var(--radius) var(--radius);overflow:hidden;margin-bottom:8px;}
+
+  /* ITEM */
+  .schedule-item{display:flex;align-items:flex-start;gap:10px;padding:11px 14px;border-bottom:1px solid #f0f0f0;position:relative;}
+  .schedule-item:last-child{border-bottom:none;}
+  .highlight-row{background:var(--pink-light);}
+  .flight-row{background:var(--snow);}
+  .time-col{min-width:44px;font-size:0.78rem;color:var(--gray);font-weight:600;padding-top:2px;}
+  .item-icon{font-size:1.1rem;padding-top:1px;}
+  .item-content{flex:1;cursor:pointer;}
+  .item-place{font-weight:600;font-size:0.92rem;color:var(--dark);}
+  .item-activity{font-size:0.82rem;color:var(--blue);margin-top:2px;}
+  .item-note{font-size:0.78rem;color:var(--gray);margin-top:3px;line-height:1.4;}
+  .item-transport{font-size:0.75rem;background:var(--blue-light);color:var(--blue);border-radius:6px;padding:2px 7px;display:inline-block;margin-top:4px;}
+  .item-actions{display:flex;flex-direction:column;gap:4px;margin-left:2px;}
+  .action-btn{background:none;border:none;font-size:1rem;cursor:pointer;padding:2px 4px;border-radius:6px;line-height:1;}
+  .action-btn:active{background:#f0f0f0;}
+
+  /* OVERLAY + SHEET */
+  .overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:200;}
+  .overlay.show{display:block;}
+  .sheet{position:fixed;bottom:0;left:0;right:0;background:white;border-radius:20px 20px 0 0;z-index:201;padding:0 0 env(safe-area-inset-bottom,16px);transform:translateY(100%);transition:transform 0.3s cubic-bezier(0.32,0.72,0,1);max-height:92vh;overflow-y:auto;}
+  .sheet.show{transform:translateY(0);}
+  .sheet-handle{width:40px;height:4px;background:#ddd;border-radius:2px;margin:12px auto 0;}
+  .sheet-header{padding:14px 18px 10px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;}
+  .sheet-title{font-weight:700;font-size:1rem;}
+  .sheet-close{background:none;border:none;font-size:1.3rem;cursor:pointer;color:var(--gray);}
+  .sheet-body{padding:14px 18px;display:flex;flex-direction:column;gap:10px;}
+
+  /* INFO VIEW */
+  .info-row{display:flex;gap:10px;align-items:flex-start;}
+  .info-icon{font-size:1rem;min-width:22px;margin-top:1px;}
+  .info-content{flex:1;}
+  .info-label{font-size:0.72rem;color:var(--gray);font-weight:600;letter-spacing:0.5px;}
+  .info-text{font-size:0.88rem;margin-top:3px;line-height:1.5;}
+  .map-btn{display:flex;align-items:center;justify-content:center;gap:8px;background:linear-gradient(135deg,var(--pink),var(--blue));color:white;border:none;border-radius:12px;padding:13px;font-size:0.95rem;font-weight:700;cursor:pointer;width:100%;text-decoration:none;margin-top:4px;}
+  .edit-mode-btn{display:flex;align-items:center;justify-content:center;gap:6px;background:#f5f5f5;border:none;border-radius:12px;padding:11px;font-size:0.88rem;cursor:pointer;width:100%;margin-top:6px;color:var(--dark);}
+
+  /* EDIT FORM */
+  .form-group{display:flex;flex-direction:column;gap:4px;}
+  .form-label{font-size:0.78rem;color:var(--gray);font-weight:600;}
+  .form-input,.form-select,.form-textarea{border:1.5px solid var(--border);border-radius:10px;padding:9px 12px;font-size:0.88rem;color:var(--dark);outline:none;width:100%;background:white;font-family:inherit;}
+  .form-input:focus,.form-select:focus,.form-textarea:focus{border-color:var(--pink);}
+  .form-textarea{resize:vertical;min-height:60px;}
+  .form-row-2{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+  .btn-save{padding:12px;border-radius:12px;border:none;font-size:0.95rem;font-weight:700;cursor:pointer;width:100%;background:linear-gradient(135deg,var(--pink),var(--blue));color:white;margin-top:4px;}
+  .btn-delete{padding:11px;border-radius:12px;border:1.5px solid var(--red);font-size:0.88rem;font-weight:600;cursor:pointer;width:100%;background:white;color:var(--red);margin-top:6px;}
+
+  /* EXPENSE */
+  .section{padding:12px 12px 0;}
+  .card{background:white;border-radius:var(--radius);box-shadow:var(--shadow);overflow:hidden;margin-bottom:12px;}
+  .card-title{padding:12px 14px;font-weight:700;font-size:0.9rem;border-bottom:1px solid var(--border);}
+  .card-body{padding:14px;}
+  .people-setup{display:flex;flex-direction:column;gap:10px;}
+  .count-row{display:flex;align-items:center;gap:10px;}
+  .count-row label{font-size:0.85rem;color:var(--gray);flex:1;}
+  .count-ctrl{display:flex;align-items:center;gap:8px;}
+  .count-btn{width:32px;height:32px;border:2px solid var(--border);border-radius:8px;background:white;font-size:1.1rem;cursor:pointer;}
+  .count-num{font-weight:700;font-size:1.1rem;min-width:28px;text-align:center;}
+  .people-names{display:flex;flex-wrap:wrap;gap:8px;}
+  .name-chip{display:flex;align-items:center;background:var(--blue-light);border-radius:20px;padding:4px 12px;}
+  .name-chip input{border:none;background:transparent;font-size:0.85rem;color:var(--dark);width:60px;outline:none;}
+  .exp-form-group{display:flex;flex-direction:column;gap:4px;}
+  .exp-form-label{font-size:0.78rem;color:var(--gray);font-weight:600;}
+  .exp-input,.exp-select{border:1.5px solid var(--border);border-radius:10px;padding:9px 12px;font-size:0.9rem;color:var(--dark);outline:none;width:100%;background:white;}
+  .exp-input:focus,.exp-select:focus{border-color:var(--pink);}
+  .exp-row-2{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+  .split-options{display:flex;flex-wrap:wrap;gap:6px;margin-top:4px;}
+  .split-toggle{padding:5px 12px;border-radius:20px;border:1.5px solid var(--border);font-size:0.8rem;cursor:pointer;background:white;}
+  .split-toggle.active{background:var(--pink);border-color:var(--pink);color:white;}
+  .btn-primary{padding:11px;border-radius:10px;border:none;font-size:0.9rem;font-weight:700;cursor:pointer;width:100%;background:linear-gradient(135deg,var(--pink),var(--blue));color:white;}
+  .btn-export{padding:11px;border-radius:10px;border:none;font-size:0.9rem;font-weight:700;cursor:pointer;width:100%;background:var(--green);color:white;}
+  .currency-row{display:flex;gap:8px;margin-bottom:10px;}
+  .curr-btn{flex:1;padding:8px;border-radius:8px;border:1.5px solid var(--border);background:white;font-size:0.85rem;font-weight:600;cursor:pointer;}
+  .curr-btn.active{background:var(--dark);color:white;border-color:var(--dark);}
+  .rate-row{display:flex;align-items:center;gap:8px;margin-bottom:12px;font-size:0.82rem;color:var(--gray);}
+  .rate-row input{width:70px;padding:5px 8px;border:1.5px solid var(--border);border-radius:8px;font-size:0.85rem;text-align:center;}
+  .filter-row{display:flex;gap:6px;overflow-x:auto;padding-bottom:4px;margin-bottom:10px;}
+  .filter-row::-webkit-scrollbar{display:none;}
+  .filter-chip{padding:5px 12px;border-radius:20px;border:1.5px solid var(--border);font-size:0.78rem;white-space:nowrap;cursor:pointer;background:white;}
+  .filter-chip.active{background:var(--dark);color:white;border-color:var(--dark);}
+  .expense-item{padding:12px 14px;border-bottom:1px solid #f5f5f5;}
+  .expense-item:last-child{border-bottom:none;}
+  .exp-top{display:flex;justify-content:space-between;align-items:flex-start;}
+  .exp-name{font-weight:600;font-size:0.9rem;}
+  .exp-amount{font-weight:700;font-size:1rem;color:var(--pink);}
+  .exp-meta{font-size:0.75rem;color:var(--gray);margin-top:3px;}
+  .exp-tags{display:flex;gap:6px;flex-wrap:wrap;margin-top:5px;}
+  .tag{font-size:0.72rem;padding:2px 8px;border-radius:10px;}
+  .tag-cat{background:var(--blue-light);color:var(--blue);}
+  .tag-person{background:#fff3e0;color:#e65100;}
+  .exp-del{background:none;border:none;color:var(--gray);font-size:1rem;cursor:pointer;padding:2px 6px;}
+  .empty-msg{text-align:center;color:var(--gray);font-size:0.85rem;padding:24px 0;}
+  .stat-summary{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px;}
+  .stat-box{background:white;border-radius:var(--radius);padding:14px;text-align:center;box-shadow:var(--shadow);}
+  .stat-label{font-size:0.75rem;color:var(--gray);}
+  .stat-value{font-size:1.3rem;font-weight:700;margin-top:4px;}
+  .stat-value.pink{color:var(--pink);}
+  .person-stat{padding:12px 14px;border-bottom:1px solid #f5f5f5;}
+  .person-stat:last-child{border-bottom:none;}
+  .ps-top{display:flex;justify-content:space-between;align-items:center;}
+  .ps-name{font-weight:600;}
+  .ps-paid{font-size:0.85rem;color:var(--gray);}
+  .ps-balance{font-weight:700;font-size:0.95rem;}
+  .ps-balance.positive{color:var(--green);}
+  .ps-balance.negative{color:var(--red);}
+  .ps-bar-wrap{background:#f0f0f0;border-radius:4px;height:5px;margin-top:8px;}
+  .ps-bar{height:5px;border-radius:4px;background:linear-gradient(90deg,var(--pink),var(--blue));}
+  .settle-item{padding:10px 14px;border-bottom:1px solid #f5f5f5;font-size:0.85rem;display:flex;align-items:center;gap:6px;}
+  .settle-item:last-child{border-bottom:none;}
+</style>
 </head>
-<body></body>
+<body>
+
+<div class="header">
+  <h1>🇯🇵 東京 &amp; 湯澤滑雪</h1>
+  <p>2026 / 04 / 11 (六) — 04 / 18 (六)</p>
+  <div class="trip-info">
+    <span class="trip-badge">✈️ CX450/451</span>
+    <span class="trip-badge">🎿 Kagura</span>
+    <span class="trip-badge">♨️ KKR 湯澤雪國</span>
+    <span class="trip-badge">🏨 相鐵 FRESA INN</span>
+  </div>
+</div>
+
+<div class="tabs">
+  <div class="tab active" onclick="switchTab('itinerary')">📅 行程</div>
+  <div class="tab" onclick="switchTab('expense')">💴 記帳</div>
+  <div class="tab" onclick="switchTab('stats')">📊 統計</div>
+</div>
+
+<div class="page active" id="page-itinerary">
+  <div id="itinerary-root"></div>
+  <div style="height:20px"></div>
+</div>
+
+<!-- EXPENSE -->
+<div class="page" id="page-expense">
+  <div class="section">
+    <div class="card">
+      <div class="card-title">👥 旅伴設定</div>
+      <div class="card-body">
+        <div class="people-setup">
+          <div class="count-row">
+            <label>人數</label>
+            <div class="count-ctrl">
+              <button class="count-btn" onclick="changePeopleCount(-1)">－</button>
+              <span class="count-num" id="people-count">2</span>
+              <button class="count-btn" onclick="changePeopleCount(1)">＋</button>
+            </div>
+          </div>
+          <div class="people-names" id="people-names"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="section">
+    <div class="card">
+      <div class="card-title">💱 匯率設定</div>
+      <div class="card-body">
+        <div class="currency-row">
+          <button class="curr-btn active" id="curr-jpy" onclick="setCurrency('JPY')">日圓 JPY</button>
+          <button class="curr-btn" id="curr-twd" onclick="setCurrency('TWD')">台幣 TWD</button>
+        </div>
+        <div class="rate-row">
+          <span>1 TWD =</span>
+          <input type="number" id="rate-input" value="4.5" step="0.1" onchange="saveRate()">
+          <span>JPY</span>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="section">
+    <div class="card">
+      <div class="card-title">➕ 新增記帳</div>
+      <div class="card-body">
+        <div style="display:flex;flex-direction:column;gap:10px;">
+          <div class="exp-form-group"><label class="exp-form-label">項目名稱</label><input class="exp-input" id="exp-name" type="text" placeholder="例：敘敘苑晚餐"></div>
+          <div class="exp-row-2">
+            <div class="exp-form-group"><label class="exp-form-label" id="amount-label">金額 (JPY)</label><input class="exp-input" id="exp-amount" type="number" placeholder="0"></div>
+            <div class="exp-form-group"><label class="exp-form-label">類別</label>
+              <select class="exp-select" id="exp-cat">
+                <option value="餐飲">🍜 餐飲</option><option value="交通">🚆 交通</option>
+                <option value="住宿">🏨 住宿</option><option value="購物">🛍️ 購物</option>
+                <option value="票券">🎟️ 票券</option><option value="其他">📦 其他</option>
+              </select>
+            </div>
+          </div>
+          <div class="exp-form-group"><label class="exp-form-label">付款人</label><select class="exp-select" id="exp-payer"></select></div>
+          <div class="exp-form-group"><label class="exp-form-label">分攤對象</label><div class="split-options" id="split-options"></div></div>
+          <div class="exp-form-group"><label class="exp-form-label">備註</label><input class="exp-input" id="exp-note" type="text" placeholder="選填"></div>
+          <button class="btn-primary" onclick="addExpense()">記帳</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="section">
+    <div class="card">
+      <div class="card-title">📋 支出記錄</div>
+      <div class="card-body" style="padding:0">
+        <div class="filter-row" style="padding:10px 14px 0">
+          <span class="filter-chip active" onclick="filterExpenses('全部',this)">全部</span>
+          <span class="filter-chip" onclick="filterExpenses('餐飲',this)">🍜 餐飲</span>
+          <span class="filter-chip" onclick="filterExpenses('交通',this)">🚆 交通</span>
+          <span class="filter-chip" onclick="filterExpenses('住宿',this)">🏨 住宿</span>
+          <span class="filter-chip" onclick="filterExpenses('購物',this)">🛍️ 購物</span>
+          <span class="filter-chip" onclick="filterExpenses('票券',this)">🎟️ 票券</span>
+          <span class="filter-chip" onclick="filterExpenses('其他',this)">📦 其他</span>
+        </div>
+        <div id="expense-list" style="margin-top:8px"><div class="empty-msg">還沒有記帳喔！</div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- STATS -->
+<div class="page" id="page-stats">
+  <div class="section" style="padding-top:12px">
+    <div class="stat-summary">
+      <div class="stat-box"><div class="stat-label">總支出 (JPY)</div><div class="stat-value pink" id="stat-total-jpy">¥0</div></div>
+      <div class="stat-box"><div class="stat-label">總支出 (TWD)</div><div class="stat-value" id="stat-total-twd">NT$0</div></div>
+    </div>
+    <div class="card"><div class="card-title">👤 每人支出</div><div id="person-stats"><div class="empty-msg">還沒有資料</div></div></div>
+    <div class="card"><div class="card-title">💸 結算清單</div><div id="settlement-list"><div class="empty-msg">還沒有資料</div></div></div>
+    <div class="card"><div class="card-title">📊 類別分析</div><div id="cat-stats"><div class="empty-msg">還沒有資料</div></div></div>
+    <div class="card">
+      <div class="card-title">📤 匯出資料</div>
+      <div class="card-body">
+        <button class="btn-export" onclick="exportCSV()">⬇️ 下載 CSV 表單</button>
+        <button style="padding:11px;border-radius:10px;border:none;font-size:0.9rem;font-weight:700;cursor:pointer;width:100%;background:#3a7bd5;color:white;margin-top:8px" onclick="copyJSON()">📋 複製 JSON 資料</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- SHEET OVERLAY -->
+<div class="overlay" id="overlay" onclick="closeSheet()"></div>
+<div class="sheet" id="sheet">
+  <div class="sheet-handle"></div>
+  <div class="sheet-header">
+    <div class="sheet-title" id="sh-title">地點資訊</div>
+    <button class="sheet-close" onclick="closeSheet()">✕</button>
+  </div>
+  <div class="sheet-body" id="sheet-body"></div>
+</div>
+
+<script>
+// =================== ITINERARY DATA ===================
+const DEFAULT_DAYS = [
+  { day:1, date:'4/11', weekday:'六', theme:'出發！飛往日本', items:[
+    { id:'d1-1', time:'13:00', emoji:'✈️', place:'桃園機場 T1 起飛', activity:'CX450 — 出發！', note:'', address:'33000 台灣桃園市大園區航站南路9號', transport:'－', maps:'https://maps.google.com/?q=台灣桃園國際機場第一航廈', style:'flight' },
+    { id:'d1-2', time:'17:15', emoji:'🛬', place:'成田機場 T2 抵達', activity:'CX450 抵達（東京時間）', note:'時差 +1h', address:'千葉県成田市三里塚御料牧場1-1', transport:'入境後前往 JR 成田特快 N\'EX 搭乘處', maps:'https://maps.google.com/?q=成田国際空港第2ターミナル', style:'flight' },
+    { id:'d1-3', time:'18:00', emoji:'🚆', place:'成田 → 東京站', activity:'N\'EX 直達', note:'建議預訂指定席', address:'成田機場 T2 JR 站 B1F', transport:'入境後跟「成田エクスプレス」指標走至 B1F，車程約 60 分。', maps:'https://maps.google.com/?q=成田空港第2ビル駅', style:'' },
+    { id:'d1-4', time:'19:30', emoji:'🚄', place:'東京站 → 越後湯澤', activity:'上越新幹線 Max/谷川號', note:'指定席建議預約', address:'東京都千代田区丸の内1-9-1（東京駅）', transport:'前往新幹線月台，搭「とき」或「たにがわ」號，車程約 1.5h。', maps:'https://maps.google.com/?q=東京駅新幹線', style:'' },
+    { id:'d1-5', time:'21:00', emoji:'♨️', place:'KKR 湯澤雪國溫泉飯店', activity:'Check-in / 溫泉', note:'有溫泉！附近有 7-11', address:'〒949-6101 新潟県南魚沼郡湯沢町湯沢2427-1', transport:'越後湯澤站東口出站，步行約 8 分鐘。', maps:'https://maps.google.com/?q=KKR湯沢ゆきぐに+新潟県南魚沼郡湯沢町湯沢2427-1', style:'highlight' }
+  ]},
+  { day:2, date:'4/12', weekday:'日', theme:'🎿 Kagura 滑雪 Day 1', items:[
+    { id:'d2-1', time:'09:00', emoji:'🚌', place:'飯店 → Kagura', activity:'接駁巴士', note:'需確認接駁時間', address:'KKR 湯澤雪國溫泉飯店 大廳集合', transport:'飯店大廳集合，搭接駁巴士，車程約 35 分。', maps:'https://maps.google.com/?q=KKR湯沢ゆきぐに', style:'' },
+    { id:'d2-2', time:'09:30', emoji:'⛷️', place:'Kagura Ski Resort', activity:'滑雪整天・5.5h', note:'高海拔雪質好，含午餐', address:'〒949-6212 新潟県南魚沼郡湯沢町三俣686', transport:'接駁巴士直達，車程約 35 分。', maps:'https://maps.google.com/?q=かぐらスキー場+新潟県南魚沼郡湯沢町三俣686', style:'highlight' },
+    { id:'d2-3', time:'15:00', emoji:'🚌', place:'Kagura → 湯澤（返回）', activity:'接駁巴士', note:'回飯店泡溫泉', address:'Kagura Ski Resort 巴士站', transport:'搭接駁巴士返回，車程約 35 分。', maps:'https://maps.google.com/?q=かぐらスキー場', style:'' },
+    { id:'d2-4', time:'18:00', emoji:'🍜', place:'湯澤市區晚餐', activity:'溫泉料理 / 蕎麥麵', note:'', address:'新潟県南魚沼郡湯沢町（越後湯沢駅周辺）', transport:'越後湯澤站步行範圍內餐廳。', maps:'https://maps.google.com/?q=越後湯沢駅+周辺+レストラン', style:'' }
+  ]},
+  { day:3, date:'4/13', weekday:'一', theme:'🎿 Kagura Day 2 → 移動東京', items:[
+    { id:'d3-1', time:'09:00', emoji:'🚌', place:'飯店 → Kagura（退房寄行李）', activity:'接駁巴士・35 分', note:'退房行李寄放', address:'KKR 湯澤雪國溫泉飯店 大廳', transport:'退房後寄放行李，搭接駁巴士至 Kagura。', maps:'https://maps.google.com/?q=KKR湯沢ゆきぐに', style:'' },
+    { id:'d3-2', time:'09:30', emoji:'⛷️', place:'Kagura Ski Resort', activity:'滑雪整天・5.5h', note:'含午餐', address:'〒949-6212 新潟県南魚沼郡湯沢町三俣686', transport:'接駁巴士直達。', maps:'https://maps.google.com/?q=かぐらスキー場', style:'highlight' },
+    { id:'d3-3', time:'15:00', emoji:'🚌', place:'Kagura → 越後湯澤站（取行李）', activity:'巴士・35 分', note:'準備移動東京', address:'Kagura Ski Resort 巴士站', transport:'搭接駁巴士返回，取寄放的行李。', maps:'https://maps.google.com/?q=かぐらスキー場', style:'' },
+    { id:'d3-4', time:'15:30', emoji:'🚄', place:'湯澤 → 上野', activity:'上越新幹線・1h20', note:'指定席建議預約', address:'越後湯沢駅 新幹線月台', transport:'搭「たにがわ」或「とき」，在上野駅下車。', maps:'https://maps.google.com/?q=越後湯沢駅', style:'' },
+    { id:'d3-5', time:'17:00', emoji:'🏨', place:'相鐵 FRESA INN 上野御徒町', activity:'Check-in', note:'全家便利商店在樓下', address:'〒110-0005 東京都台東区上野5-2-4', transport:'上野駅「不忍口」步行約 3-5 分。', maps:'https://maps.google.com/?q=相鉄フレッサイン東京上野御徒町+東京都台東区上野5-2-4', style:'' },
+    { id:'d3-6', time:'18:30', emoji:'🥩', place:'牛かつ もと村 秋葉原店', activity:'炸牛排晚餐・2h', note:'排隊名店，早點去', address:'〒101-0021 東京都千代田区外神田3-10-5', transport:'飯店步行約 12 分。或搭 JR 至秋葉原站步行 5 分。', maps:'https://maps.google.com/?q=牛かつもと村+秋葉原店+東京都千代田区外神田3-10-5', style:'' },
+    { id:'d3-7', time:'20:30', emoji:'🎮', place:'TAITO Station 秋葉原', activity:'電玩中心・2h', note:'夾娃娃機 / 節奏遊戲', address:'〒101-0021 東京都千代田区外神田1-11-5', transport:'秋葉原站電気街口出站，步行約 3 分。', maps:'https://maps.google.com/?q=タイトーステーション秋葉原', style:'' }
+  ]},
+  { day:4, date:'4/14', weekday:'二', theme:'法輪寺・新宿・SOMPO', items:[
+    { id:'d4-1', time:'09:30', emoji:'⛩️', place:'法輪寺（早稻田）', activity:'花手水參觀・45 分', note:'超美花手水，必拍！', address:'〒162-0051 東京都新宿区西早稲田1-1-15', transport:'御徒町站搭銀座線→末廣町，再轉東西線至早稲田站，步行約 5 分。共約 40 分。', maps:'https://maps.google.com/?q=法輪寺+東京都新宿区西早稲田1-1-15', style:'' },
+    { id:'d4-2', time:'11:50', emoji:'📖', place:'東京堂書店', activity:'設計文具・1h', note:'週末公休注意', address:'〒101-0051 東京都千代田区神田神保町1-17', transport:'早稻田站搭東西線至九段下，步行約 10 分。注意：週末公休。', maps:'https://maps.google.com/?q=東京堂書店+東京都千代田区神田神保町1-17', style:'' },
+    { id:'d4-3', time:'13:30', emoji:'🛍️', place:'新宿（Alpen / atmos / Kiddyland）', activity:'購物・2h', note:'', address:'東京都新宿区西新宿（新宿駅周辺）', transport:'九段下站搭丸之內線至新宿站，約 10 分。西口出站即達。', maps:'https://maps.google.com/?q=新宿駅西口', style:'' },
+    { id:'d4-4', time:'15:30', emoji:'🎨', place:'SOMPO 美術館', activity:'梵谷《向日葵》真跡・1h', note:'', address:'〒160-8338 東京都新宿区西新宿1-26-1', transport:'新宿站西口步行約 5 分，損保ジャパン本社ビル 42F。', maps:'https://maps.google.com/?q=SOMPO美術館+東京都新宿区西新宿1-26-1', style:'highlight' },
+    { id:'d4-5', time:'16:45', emoji:'📷', place:'北村相機店', activity:'攝影器材・45 分', note:'二手相機齊全', address:'〒160-0023 東京都新宿区西新宿1-18-2', transport:'SOMPO 美術館步行約 3 分。', maps:'https://maps.google.com/?q=キタムラ+新宿西口店+東京都新宿区西新宿1-18-2', style:'' },
+    { id:'d4-6', time:'17:30', emoji:'🥓', place:'叙々苑 新宿エルタワー店', activity:'晚餐・2h', note:'⚠️ 需提前 1 個月預約', address:'〒163-0536 東京都新宿区西新宿1-6-1 新宿エルタワー36F', transport:'新宿站西口步行約 8 分，新宿 El Torre 36 樓。', maps:'https://maps.google.com/?q=叙々苑+新宿エルタワー店', style:'' }
+  ]},
+  { day:5, date:'4/15', weekday:'三', theme:'🗻 富士山一日遊', items:[
+    { id:'d5-1', time:'08:00', emoji:'🗻', place:'富士山五合目 一日遊', activity:'全天・11h', note:'帶防風外套，山上涼', address:'静岡県富士宮市富士山（富士山五合目）', transport:'新宿站搭高速巴士「富士急ハイランド」方向，或報名一日遊。山上氣溫約 0-5°C。', maps:'https://maps.google.com/?q=富士山五合目', style:'highlight' },
+    { id:'d5-2', time:'19:30', emoji:'🍳', place:'EGG BABY CAFE', activity:'蛋料理晚餐・1.5h', note:'蛋料理極有名', address:'東京都渋谷区神南1-19-3（澀谷附近）', transport:'從回程地搭 JR 至澀谷站，步行約 5-10 分。', maps:'https://maps.google.com/?q=EGG+BABY+CAFE+渋谷', style:'' }
+  ]},
+  { day:6, date:'4/16', weekday:'四', theme:'神社・teamLab・SHIBUYA SKY', items:[
+    { id:'d6-1', time:'09:00', emoji:'⛩️', place:'小網神社', activity:'強運洗錢・45 分', note:'早點去避人潮', address:'〒103-0016 東京都中央区日本橋小網町16-23', transport:'飯店搭 JR 至秋葉原，換日比谷線至人形町站，步行約 5 分。共約 15 分。', maps:'https://maps.google.com/?q=小網神社+東京都中央区日本橋小網町16-23', style:'' },
+    { id:'d6-2', time:'10:00', emoji:'🍕', place:'麻布台之丘・Pizza 4P\'s', activity:'午餐・1.5h', note:'炸豬排河村也在附近', address:'〒106-0031 東京都港区西麻布1-2-7（Pizza 4P\'s 西麻布）', transport:'人形町站搭日比谷線至神谷町站，步行約 10 分至麻布台ヒルズ。', maps:"https://maps.google.com/?q=Pizza+4Ps+西麻布", style:'' },
+    { id:'d6-3', time:'11:30', emoji:'🌊', place:'teamLab Borderless 麻布台之丘', activity:'數位藝術館・2h', note:'⚠️ 需預約指定場次', address:'〒106-0031 東京都港区虎ノ門5-9-1 麻布台ヒルズ B2-4F', transport:'神谷町站 1 號出口步行約 5 分，麻布台ヒルズ地下層。', maps:'https://maps.google.com/?q=チームラボボーダレス+麻布台ヒルズ', style:'highlight' },
+    { id:'d6-4', time:'14:00', emoji:'🌇', place:'SHIBUYA SKY', activity:'展望台・1.5h', note:'預約日落前 1 小時入場', address:'〒150-6145 東京都渋谷区渋谷2-24-12 渋谷スクランブルスクエア 46F', transport:'神谷町站搭日比谷線至澀谷站，連通渋谷スクランブルスクエア 14F 售票。', maps:'https://maps.google.com/?q=SHIBUYA+SKY+渋谷スクランブルスクエア', style:'highlight' },
+    { id:'d6-5', time:'15:45', emoji:'🍜', place:'山下本気うどん 道玄坂店', activity:'烏龍麵・1h', note:'白色明太子奶油烏龍麵', address:'〒150-0043 東京都渋谷区道玄坂2-25-6', transport:'澀谷站步行約 5 分，沿道玄坂上行。', maps:'https://maps.google.com/?q=山下本気うどん+渋谷道玄坂店', style:'' },
+    { id:'d6-6', time:'16:45', emoji:'🛒', place:'MEGA ドン・キホーテ 渋谷本店', activity:'購物・1.5h', note:'零食 / 電器 / 美妝', address:'〒150-0043 東京都渋谷区道玄坂1-16-5', transport:'澀谷站步行約 5 分。', maps:'https://maps.google.com/?q=MEGAドン・キホーテ渋谷本店', style:'' }
+  ]},
+  { day:7, date:'4/17', weekday:'五', theme:'上野・原宿・購物衝刺', items:[
+    { id:'d7-1', time:'09:30', emoji:'🌳', place:'上野公園', activity:'公園・美術館・2h', note:'兩美術館可選', address:'〒110-8716 東京都台東区上野公園', transport:'飯店步行約 10 分，JR 上野站公園口出站即達。', maps:'https://maps.google.com/?q=上野公園', style:'' },
+    { id:'d7-2', time:'11:30', emoji:'🥩', place:'ねぎし 上野店', activity:'厚切烤牛舌定食・1h', note:'', address:'〒110-0005 東京都台東区上野6-14-4 レフ上野 B1F', transport:'上野公園步行約 5 分。', maps:'https://maps.google.com/?q=ねぎし+上野店', style:'' },
+    { id:'d7-3', time:'12:30', emoji:'🏕️', place:'mont-bell 上野店', activity:'戶外用品・1h', note:'東京最大分店', address:'〒110-0005 東京都台東区上野3-19-3 上野フロンティアタワー2F', transport:'JR 上野站步行約 1 分，上野フロンティアタワー 2F。', maps:'https://maps.google.com/?q=モンベル+上野店', style:'' },
+    { id:'d7-4', time:'13:45', emoji:'🥞', place:'neel 原宿・可麗餅', activity:'30 分', note:'梨子圖案標誌', address:'〒150-0001 東京都渋谷区神宮前1-14-30', transport:'上野站搭 JR 山手線至原宿站，竹下口出站步行約 3 分。', maps:'https://maps.google.com/?q=neel原宿', style:'' },
+    { id:'d7-5', time:'14:15', emoji:'👕', place:'BEAMS 原宿', activity:'服飾・2h', note:'神宮前一帶多店', address:'〒150-0001 東京都渋谷区神宮前3-25-15', transport:'原宿站步行約 5 分，神宮前エリア。', maps:'https://maps.google.com/?q=BEAMS+原宿', style:'' },
+    { id:'d7-6', time:'16:15', emoji:'🏊', place:'Speedo / arena 原宿', activity:'泳具・1.5h', note:'旗艦店', address:'〒150-0001 東京都渋谷区神宮前（キャットストリート）', transport:'BEAMS 附近，神宮前キャットストリート步行即達。', maps:'https://maps.google.com/?q=スピード+アリーナ+原宿+神宮前', style:'' }
+  ]},
+  { day:8, date:'4/18', weekday:'六', theme:'回家！', items:[
+    { id:'d8-1', time:'09:00', emoji:'🧳', place:'相鐵 FRESA INN 退房', activity:'收拾・1h', note:'', address:'〒110-0005 東京都台東区上野5-2-4', transport:'退房後步行至京成上野站搭乘 Skyliner。', maps:'https://maps.google.com/?q=相鉄フレッサイン東京上野御徒町', style:'' },
+    { id:'d8-2', time:'11:00', emoji:'🚆', place:'京成 Skyliner・上野 → 成田', activity:'41 分', note:'最晚 12:00 到機場', address:'〒110-0005 東京都台東区上野7-1-1（京成上野駅）', transport:'飯店步行至京成上野站約 5 分，搭 Skyliner，車程 41 分。', maps:'https://maps.google.com/?q=京成上野駅', style:'' },
+    { id:'d8-3', time:'15:45', emoji:'✈️', place:'成田機場 T2 起飛', activity:'CX451・座位 56J', note:'', address:'千葉県成田市三里塚御料牧場1-1 第2ターミナル', transport:'Skyliner 抵達後前往 T2 辦理登機。', maps:'https://maps.google.com/?q=成田国際空港第2ターミナル', style:'flight' },
+    { id:'d8-4', time:'18:25', emoji:'🏠', place:'桃園機場 T1 抵達', activity:'旅程結束！', note:'', address:'33000 台灣桃園市大園區航站南路9號', transport:'－', maps:'', style:'flight' }
+  ]}
+];
+
+// =================== STATE ===================
+let appState = JSON.parse(localStorage.getItem('trip_state_v2') || 'null') || {
+  days: JSON.parse(JSON.stringify(DEFAULT_DAYS)),
+  people: ['小明','小美'], currency:'JPY', rate:4.5, expenses:[]
+};
+// ensure days exist (migration)
+if (!appState.days) appState.days = JSON.parse(JSON.stringify(DEFAULT_DAYS));
+
+function saveState() { localStorage.setItem('trip_state_v2', JSON.stringify(appState)); }
+
+// =================== RENDER ITINERARY ===================
+function renderItinerary() {
+  const root = document.getElementById('itinerary-root');
+  root.innerHTML = appState.days.map(day => `
+    <div class="day-section">
+      <div class="day-header">
+        <span class="day-badge">Day ${day.day}</span>
+        <span>${day.date} (${day.weekday})</span>
+        <span class="day-subtitle">${day.theme}</span>
+        <button class="day-add-btn" onclick="openAddItem(${day.day})">＋ 新增</button>
+      </div>
+      <div class="day-body" id="day-body-${day.day}">
+        ${day.items.map(item => renderItem(item, day.day)).join('')}
+      </div>
+    </div>`).join('');
+}
+
+function rowClass(style) {
+  if (style==='highlight') return 'schedule-item highlight-row';
+  if (style==='flight') return 'schedule-item flight-row';
+  return 'schedule-item';
+}
+
+function renderItem(item, dayNum) {
+  return `<div class="${rowClass(item.style)}" id="item-${item.id}">
+    <div class="time-col">${item.time}</div>
+    <div class="item-icon">${item.emoji}</div>
+    <div class="item-content" onclick="openItemInfo('${item.id}',${dayNum})">
+      <div class="item-place">${item.place}</div>
+      ${item.activity ? `<div class="item-activity">${item.activity}</div>` : ''}
+      ${item.note ? `<div class="item-note">${item.note}</div>` : ''}
+      ${item.address ? `<div class="item-transport">📍 點此查看地址與交通</div>` : ''}
+    </div>
+    <div class="item-actions">
+      <button class="action-btn" title="編輯" onclick="openEditItem('${item.id}',${dayNum})">✏️</button>
+      <button class="action-btn" title="刪除" onclick="deleteItem('${item.id}',${dayNum})">🗑️</button>
+    </div>
+  </div>`;
+}
+
+// =================== SHEET ===================
+let sheetMode = null;
+let currentEditId = null;
+let currentEditDay = null;
+
+function openSheet(title, bodyHTML) {
+  document.getElementById('sh-title').textContent = title;
+  document.getElementById('sheet-body').innerHTML = bodyHTML;
+  document.getElementById('overlay').classList.add('show');
+  setTimeout(() => document.getElementById('sheet').classList.add('show'), 10);
+}
+function closeSheet() {
+  document.getElementById('sheet').classList.remove('show');
+  document.getElementById('overlay').classList.remove('show');
+}
+
+// INFO VIEW
+function openItemInfo(id, dayNum) {
+  const day = appState.days.find(d => d.day === dayNum);
+  const item = day.items.find(i => i.id === id);
+  const mapsBtn = item.maps ? `<a class="map-btn" href="${item.maps}" target="_blank">🗺️ 在 Google Maps 開啟</a>` : '';
+  const body = `
+    <div class="info-row"><span class="info-icon">📍</span><div class="info-content"><div class="info-label">地址</div><div class="info-text">${item.address||'－'}</div></div></div>
+    <div class="info-row"><span class="info-icon">🚆</span><div class="info-content"><div class="info-label">交通指引</div><div class="info-text">${item.transport||'－'}</div></div></div>
+    ${item.note ? `<div class="info-row"><span class="info-icon">💡</span><div class="info-content"><div class="info-label">備註</div><div class="info-text">${item.note}</div></div></div>` : ''}
+    ${mapsBtn}
+    <button class="edit-mode-btn" onclick="closeSheet();setTimeout(()=>openEditItem('${id}',${dayNum}),200)">✏️ 編輯此行程</button>`;
+  openSheet(`${item.emoji} ${item.place}`, body);
+}
+
+// EDIT ITEM
+function openEditItem(id, dayNum) {
+  const day = appState.days.find(d => d.day === dayNum);
+  const item = day.items.find(i => i.id === id);
+  currentEditId = id; currentEditDay = dayNum;
+  const body = `
+    <div class="form-group"><label class="form-label">時間</label><input class="form-input" id="ef-time" value="${item.time}" placeholder="09:00"></div>
+    <div class="form-row-2">
+      <div class="form-group"><label class="form-label">Emoji</label><input class="form-input" id="ef-emoji" value="${item.emoji}" placeholder="⛷️"></div>
+      <div class="form-group"><label class="form-label">樣式</label>
+        <select class="form-select" id="ef-style">
+          <option value="" ${item.style===''?'selected':''}>一般</option>
+          <option value="highlight" ${item.style==='highlight'?'selected':''}>粉色重點</option>
+          <option value="flight" ${item.style==='flight'?'selected':''}>藍色航班</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-group"><label class="form-label">地點名稱</label><input class="form-input" id="ef-place" value="${escHtml(item.place)}"></div>
+    <div class="form-group"><label class="form-label">活動說明</label><input class="form-input" id="ef-activity" value="${escHtml(item.activity)}"></div>
+    <div class="form-group"><label class="form-label">備註</label><input class="form-input" id="ef-note" value="${escHtml(item.note)}"></div>
+    <div class="form-group"><label class="form-label">地址</label><input class="form-input" id="ef-address" value="${escHtml(item.address)}"></div>
+    <div class="form-group"><label class="form-label">交通指引</label><textarea class="form-textarea" id="ef-transport">${escHtml(item.transport)}</textarea></div>
+    <div class="form-group"><label class="form-label">Google Maps 連結</label><input class="form-input" id="ef-maps" value="${escHtml(item.maps)}" type="url"></div>
+    <button class="btn-save" onclick="saveEditItem()">💾 儲存</button>
+    <button class="btn-delete" onclick="deleteItem('${id}',${dayNum});closeSheet()">🗑️ 刪除此行程</button>`;
+  openSheet('✏️ 編輯行程', body);
+}
+
+function saveEditItem() {
+  const day = appState.days.find(d => d.day === currentEditDay);
+  const item = day.items.find(i => i.id === currentEditId);
+  item.time = document.getElementById('ef-time').value;
+  item.emoji = document.getElementById('ef-emoji').value;
+  item.style = document.getElementById('ef-style').value;
+  item.place = document.getElementById('ef-place').value;
+  item.activity = document.getElementById('ef-activity').value;
+  item.note = document.getElementById('ef-note').value;
+  item.address = document.getElementById('ef-address').value;
+  item.transport = document.getElementById('ef-transport').value;
+  item.maps = document.getElementById('ef-maps').value;
+  saveState(); renderItinerary(); closeSheet();
+}
+
+// ADD ITEM
+function openAddItem(dayNum) {
+  currentEditDay = dayNum;
+  const body = `
+    <div class="form-group"><label class="form-label">時間</label><input class="form-input" id="af-time" placeholder="09:00"></div>
+    <div class="form-row-2">
+      <div class="form-group"><label class="form-label">Emoji</label><input class="form-input" id="af-emoji" value="📍" placeholder="📍"></div>
+      <div class="form-group"><label class="form-label">樣式</label>
+        <select class="form-select" id="af-style">
+          <option value="">一般</option>
+          <option value="highlight">粉色重點</option>
+          <option value="flight">藍色航班</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-group"><label class="form-label">地點名稱 *</label><input class="form-input" id="af-place" placeholder="例：上野公園"></div>
+    <div class="form-group"><label class="form-label">活動說明</label><input class="form-input" id="af-activity" placeholder="例：散步・2h"></div>
+    <div class="form-group"><label class="form-label">備註</label><input class="form-input" id="af-note" placeholder="例：帶傘"></div>
+    <div class="form-group"><label class="form-label">地址</label><input class="form-input" id="af-address" placeholder="日文地址"></div>
+    <div class="form-group"><label class="form-label">交通指引</label><textarea class="form-textarea" id="af-transport" placeholder="如何前往…"></textarea></div>
+    <div class="form-group"><label class="form-label">Google Maps 連結</label><input class="form-input" id="af-maps" type="url" placeholder="https://maps.google.com/..."></div>
+    <button class="btn-save" onclick="saveAddItem()">➕ 新增行程</button>`;
+  openSheet(`＋ 新增行程（Day ${dayNum}）`, body);
+}
+
+function saveAddItem() {
+  const place = document.getElementById('af-place').value.trim();
+  if (!place) { alert('請填寫地點名稱'); return; }
+  const day = appState.days.find(d => d.day === currentEditDay);
+  const newItem = {
+    id: 'd'+ currentEditDay +'-'+ Date.now(),
+    time: document.getElementById('af-time').value || '',
+    emoji: document.getElementById('af-emoji').value || '📍',
+    style: document.getElementById('af-style').value,
+    place,
+    activity: document.getElementById('af-activity').value,
+    note: document.getElementById('af-note').value,
+    address: document.getElementById('af-address').value,
+    transport: document.getElementById('af-transport').value,
+    maps: document.getElementById('af-maps').value
+  };
+  day.items.push(newItem);
+  saveState(); renderItinerary(); closeSheet();
+}
+
+function deleteItem(id, dayNum) {
+  if (!confirm('確定要刪除這筆行程？')) return;
+  const day = appState.days.find(d => d.day === dayNum);
+  day.items = day.items.filter(i => i.id !== id);
+  saveState(); renderItinerary();
+}
+
+function escHtml(s) { return (s||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;'); }
+
+// =================== TABS ===================
+function switchTab(name) {
+  document.querySelectorAll('.tab').forEach((t,i) => t.classList.toggle('active',['itinerary','expense','stats'][i]===name));
+  document.querySelectorAll('.page').forEach(p => p.classList.toggle('active',p.id==='page-'+name));
+  if(name==='stats') renderStats();
+}
+
+// =================== PEOPLE ===================
+function changePeopleCount(delta) {
+  const n=Math.max(1,Math.min(8,appState.people.length+delta));
+  while(appState.people.length<n) appState.people.push('旅伴'+(appState.people.length+1));
+  while(appState.people.length>n) appState.people.pop();
+  saveState(); renderPeople();
+}
+function renderPeople() {
+  document.getElementById('people-count').textContent=appState.people.length;
+  document.getElementById('people-names').innerHTML=appState.people.map((p,i)=>
+    `<div class="name-chip"><input value="${p}" placeholder="姓名" onchange="renamePerson(${i},this.value)"></div>`).join('');
+  renderPayerSelect(); renderSplitOptions();
+}
+function renamePerson(i,name){ appState.people[i]=name||('旅伴'+(i+1)); saveState(); renderPayerSelect(); renderSplitOptions(); }
+function renderPayerSelect(){
+  const sel=document.getElementById('exp-payer');
+  if(sel) sel.innerHTML=appState.people.map(p=>`<option value="${p}">${p}</option>`).join('');
+}
+
+// SPLIT
+let splitAll=true, splitSelected=new Set();
+function renderSplitOptions(){
+  const c=document.getElementById('split-options');
+  if(!c) return;
+  c.innerHTML=`<span class="split-toggle ${splitAll?'active':''}" onclick="toggleSplitAll()">全部</span>`+
+    appState.people.map(p=>`<span class="split-toggle ${!splitAll&&splitSelected.has(p)?'active':''}" onclick="toggleSplitPerson('${p}')">${p}</span>`).join('');
+}
+function toggleSplitAll(){ splitAll=true; splitSelected=new Set(appState.people); renderSplitOptions(); }
+function toggleSplitPerson(name){ splitAll=false; if(splitSelected.has(name)) splitSelected.delete(name); else splitSelected.add(name); if(!splitSelected.size) splitSelected=new Set(appState.people); renderSplitOptions(); }
+
+// CURRENCY
+function setCurrency(c){ appState.currency=c; saveState(); document.getElementById('curr-jpy').classList.toggle('active',c==='JPY'); document.getElementById('curr-twd').classList.toggle('active',c==='TWD'); document.getElementById('amount-label').textContent=`金額 (${c})`; }
+function saveRate(){ appState.rate=parseFloat(document.getElementById('rate-input').value)||4.5; saveState(); }
+function toJPY(a){ return appState.currency==='TWD'?Math.round(a*appState.rate):a; }
+function toTWD(j){ return Math.round(j/appState.rate); }
+
+// EXPENSE
+let currentFilter='全部';
+function addExpense(){
+  const name=document.getElementById('exp-name').value.trim();
+  const amount=parseFloat(document.getElementById('exp-amount').value);
+  const cat=document.getElementById('exp-cat').value;
+  const payer=document.getElementById('exp-payer').value;
+  const note=document.getElementById('exp-note').value.trim();
+  if(!name||isNaN(amount)||amount<=0){alert('請填寫名稱與金額');return;}
+  const split=splitAll?[...appState.people]:[...splitSelected];
+  appState.expenses.push({id:Date.now(),name,amount:toJPY(amount),cat,payer,note,split,date:new Date().toLocaleDateString('zh-TW')});
+  saveState();
+  document.getElementById('exp-name').value=''; document.getElementById('exp-amount').value=''; document.getElementById('exp-note').value='';
+  renderExpenses();
+}
+function deleteExpense(id){ appState.expenses=appState.expenses.filter(e=>e.id!==id); saveState(); renderExpenses(); }
+function filterExpenses(cat,el){ currentFilter=cat; document.querySelectorAll('.filter-chip').forEach(c=>c.classList.remove('active')); el.classList.add('active'); renderExpenses(); }
+function renderExpenses(){
+  const list=currentFilter==='全部'?appState.expenses:appState.expenses.filter(e=>e.cat===currentFilter);
+  const c=document.getElementById('expense-list');
+  if(!list.length){c.innerHTML='<div class="empty-msg">沒有記錄</div>';return;}
+  c.innerHTML=[...list].reverse().map(e=>`
+    <div class="expense-item">
+      <div class="exp-top"><div><div class="exp-name">${e.name}</div><div class="exp-meta">${e.date} · 付款：${e.payer}</div></div>
+      <div style="display:flex;align-items:center;gap:4px"><div class="exp-amount">¥${e.amount.toLocaleString()}</div><button class="exp-del" onclick="deleteExpense(${e.id})">✕</button></div></div>
+      <div class="exp-tags"><span class="tag tag-cat">${e.cat}</span>${e.split.map(p=>`<span class="tag tag-person">${p}</span>`).join('')}${e.note?`<span class="tag" style="background:#f0f0f0;color:#666">${e.note}</span>`:''}</div>
+    </div>`).join('');
+}
+
+// STATS
+function renderStats(){
+  const expenses=appState.expenses;
+  const totalJPY=expenses.reduce((s,e)=>s+e.amount,0);
+  document.getElementById('stat-total-jpy').textContent='¥'+totalJPY.toLocaleString();
+  document.getElementById('stat-total-twd').textContent='NT$'+toTWD(totalJPY).toLocaleString();
+  const paid={},shouldPay={};
+  appState.people.forEach(p=>{paid[p]=0;shouldPay[p]=0;});
+  expenses.forEach(e=>{if(paid[e.payer]!==undefined) paid[e.payer]+=e.amount; const sh=e.amount/e.split.length; e.split.forEach(p=>{if(shouldPay[p]!==undefined) shouldPay[p]+=sh;});});
+  const maxPaid=Math.max(...Object.values(paid),1);
+  const ps=document.getElementById('person-stats');
+  if(!expenses.length){ps.innerHTML='<div class="empty-msg">還沒有資料</div>';}
+  else ps.innerHTML=appState.people.map(p=>{
+    const bal=paid[p]-shouldPay[p],cls=bal>=0?'positive':'negative';
+    const txt=bal>=0?`多付 ¥${Math.round(bal).toLocaleString()}`:`應收 ¥${Math.abs(Math.round(bal)).toLocaleString()}`;
+    return `<div class="person-stat"><div class="ps-top"><div><div class="ps-name">${p}</div><div class="ps-paid">已付 ¥${Math.round(paid[p]).toLocaleString()} · 應付 ¥${Math.round(shouldPay[p]).toLocaleString()}</div></div><div class="ps-balance ${cls}">${txt}</div></div><div class="ps-bar-wrap"><div class="ps-bar" style="width:${Math.round(paid[p]/maxPaid*100)}%"></div></div></div>`;
+  }).join('');
+  const balance={};
+  appState.people.forEach(p=>{balance[p]=Math.round(paid[p]-shouldPay[p]);});
+  const creditors=appState.people.filter(p=>balance[p]>0).sort((a,b)=>balance[b]-balance[a]);
+  const debtors=appState.people.filter(p=>balance[p]<0).sort((a,b)=>balance[a]-balance[b]);
+  const settlements=[],bal={...balance};let ci=0,di=0;
+  while(ci<creditors.length&&di<debtors.length){const c=creditors[ci],d=debtors[di],amt=Math.min(bal[c],-bal[d]);if(amt>0)settlements.push({from:d,to:c,amount:amt});bal[c]-=amt;bal[d]+=amt;if(bal[c]===0)ci++;if(bal[d]===0)di++;}
+  const sl=document.getElementById('settlement-list');
+  if(!settlements.length){sl.innerHTML=`<div class="empty-msg">${expenses.length?'✅ 已平衡':'還沒有資料'}</div>`;}
+  else sl.innerHTML=settlements.map(s=>`<div class="settle-item"><strong>${s.from}</strong><span style="color:var(--pink)">→</span><strong>${s.to}</strong><span style="margin-left:auto;color:var(--pink);font-weight:700">¥${s.amount.toLocaleString()} (NT$${toTWD(s.amount).toLocaleString()})</span></div>`).join('');
+  const cats={};
+  expenses.forEach(e=>{cats[e.cat]=(cats[e.cat]||0)+e.amount;});
+  const catEl=document.getElementById('cat-stats');
+  if(!Object.keys(cats).length){catEl.innerHTML='<div class="empty-msg">還沒有資料</div>';return;}
+  const icons={餐飲:'🍜',交通:'🚆',住宿:'🏨',購物:'🛍️',票券:'🎟️',其他:'📦'};
+  catEl.innerHTML=Object.entries(cats).sort((a,b)=>b[1]-a[1]).map(([cat,amt])=>{
+    const pct=Math.round(amt/totalJPY*100);
+    return `<div class="person-stat"><div class="ps-top"><div class="ps-name">${icons[cat]||'📦'} ${cat}</div><div class="ps-balance">${pct}%</div></div><div style="font-size:0.8rem;color:var(--gray);margin-top:2px">¥${Math.round(amt).toLocaleString()} (NT$${toTWD(amt).toLocaleString()})</div><div class="ps-bar-wrap" style="margin-top:6px"><div class="ps-bar" style="width:${pct}%"></div></div></div>`;
+  }).join('');
+}
+
+// EXPORT
+function exportCSV(){
+  const rows=[['日期','項目','類別','金額(JPY)','金額(TWD)','付款人','分攤對象','備註']];
+  appState.expenses.forEach(e=>rows.push([e.date,e.name,e.cat,e.amount,toTWD(e.amount),e.payer,e.split.join('/'),e.note]));
+  const csv=rows.map(r=>r.map(v=>`"${String(v).replace(/"/g,'""')}"`).join(',')).join('\n');
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob(['\uFEFF'+csv],{type:'text/csv;charset=utf-8'}));
+  a.download='東京湯澤旅遊記帳.csv';a.click();
+}
+function copyJSON(){ navigator.clipboard.writeText(JSON.stringify(appState.expenses,null,2)).then(()=>alert('JSON 已複製！')); }
+
+// INIT
+function init(){
+  renderItinerary();
+  renderPeople();
+  setCurrency(appState.currency);
+  document.getElementById('rate-input').value=appState.rate;
+  splitSelected=new Set(appState.people);
+  renderSplitOptions();
+  renderExpenses();
+}
+init();
+</script>
+</body>
 </html>
