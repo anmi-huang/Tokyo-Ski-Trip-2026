@@ -3,7 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-<title>🇯🇵 東京 & 湯澤滑雪 2026</title>
+<title>Tabi — 旅行計劃</title>
+<script src="https://unpkg.com/xlsx/dist/xlsx.full.min.js"></script>
 <style>
   :root {
     --pink:#e8748a; --pink-light:#fde8ec;
@@ -37,7 +38,12 @@
   .schedule-item{display:flex;align-items:flex-start;gap:10px;padding:11px 14px;border-bottom:1px solid #f0f0f0;position:relative;}
   .schedule-item:last-child{border-bottom:none;}
   .highlight-row{background:var(--pink-light);}
-  .flight-row{background:var(--snow);}
+  .flight-row{background:var(--blue-light);}
+  .fab-color{position:fixed;bottom:20px;right:14px;width:46px;height:46px;border-radius:50%;border:none;background:white;box-shadow:0 2px 14px rgba(0,0,0,0.18);font-size:1.3rem;cursor:pointer;z-index:150;display:flex;align-items:center;justify-content:center;}
+  .color-swatch{width:30px;height:30px;border-radius:8px;cursor:pointer;border:2px solid transparent;transition:transform 0.15s;}
+  .color-swatch:active{transform:scale(0.92);}
+  .color-picker-row{display:flex;align-items:center;gap:10px;margin-top:4px;}
+  .clr-input{width:48px;height:48px;border:none;border-radius:10px;cursor:pointer;padding:2px;background:none;}
   .time-col{min-width:44px;font-size:0.78rem;color:var(--gray);font-weight:600;padding-top:2px;}
   .item-icon{font-size:1.1rem;padding-top:1px;}
   .item-content{flex:1;cursor:pointer;}
@@ -122,7 +128,7 @@
   .tag{font-size:0.72rem;padding:2px 8px;border-radius:10px;}
   .tag-cat{background:var(--blue-light);color:var(--blue);}
   .tag-person{background:#fff3e0;color:#e65100;}
-  .exp-del{background:none;border:none;color:var(--gray);font-size:1rem;cursor:pointer;padding:2px 6px;}
+  .exp-del{background:none;border:1px solid #f0b3b3;color:var(--red);font-size:0.8rem;cursor:pointer;padding:3px 8px;border-radius:6px;font-weight:600;}
   .empty-msg{text-align:center;color:var(--gray);font-size:0.85rem;padding:24px 0;}
   .stat-summary{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px;}
   .stat-box{background:white;border-radius:var(--radius);padding:14px;text-align:center;box-shadow:var(--shadow);}
@@ -141,19 +147,84 @@
   .ps-bar{height:5px;border-radius:4px;background:linear-gradient(90deg,var(--pink),var(--blue));}
   .settle-item{padding:10px 14px;border-bottom:1px solid #f5f5f5;font-size:0.85rem;display:flex;align-items:center;gap:6px;}
   .settle-item:last-child{border-bottom:none;}
+
+  /* HEADER EDIT */
+  .header-edit-btn{position:absolute;top:12px;right:12px;background:rgba(255,255,255,0.2);border:none;color:white;border-radius:8px;padding:4px 10px;font-size:0.78rem;cursor:pointer;}
+  .header{position:relative;}
+
+  /* CURRENCY GRID */
+  .curr-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:10px;}
+  .curr-cell{padding:7px 4px;border-radius:8px;border:1.5px solid var(--border);background:white;font-size:0.72rem;font-weight:600;cursor:pointer;text-align:center;line-height:1.4;}
+  .curr-cell.active{background:var(--dark);color:white;border-color:var(--dark);}
+  .curr-cell .curr-flag{font-size:1rem;display:block;}
+  .input-mode-row{display:flex;gap:8px;margin-bottom:10px;}
+  .input-mode-row button{flex:1;padding:7px;border-radius:8px;border:1.5px solid var(--border);background:white;font-size:0.78rem;font-weight:600;cursor:pointer;}
+  .input-mode-row button.active{background:var(--blue);color:white;border-color:var(--blue);}
+
+  /* RACE TRACK */
+  .race-card{background:#1a1a2e;border-radius:var(--radius);overflow:hidden;margin-bottom:12px;box-shadow:var(--shadow);}
+  .race-title{padding:12px 16px;color:white;font-weight:700;font-size:0.9rem;display:flex;align-items:center;gap:8px;border-bottom:1px solid rgba(255,255,255,0.08);}
+  .race-lane{padding:11px 14px;border-bottom:1px solid rgba(255,255,255,0.06);position:relative;}
+  .race-lane:last-child{border-bottom:none;}
+  .race-top{display:flex;align-items:center;gap:8px;margin-bottom:6px;}
+  .race-rank{font-size:1.1rem;min-width:28px;}
+  .race-name{color:white;font-weight:700;font-size:0.9rem;flex:1;}
+  .race-amount{color:white;font-weight:700;font-size:0.88rem;text-align:right;}
+  .race-amount span{display:block;font-size:0.72rem;color:rgba(255,255,255,0.5);font-weight:400;}
+  .race-track{background:rgba(255,255,255,0.1);border-radius:20px;height:10px;position:relative;overflow:visible;}
+  .race-bar{height:10px;border-radius:20px;transition:width 0.8s cubic-bezier(0.34,1.56,0.64,1);position:relative;min-width:10px;}
+  .race-car{position:absolute;right:-10px;top:50%;transform:translateY(-50%);font-size:1rem;line-height:1;}
+  .race-pct{font-size:0.68rem;color:rgba(255,255,255,0.45);margin-top:3px;text-align:right;}
+  .podium-glow-1{box-shadow:0 0 14px rgba(255,215,0,0.4);}
+  .podium-glow-2{box-shadow:0 0 10px rgba(192,192,192,0.3);}
+  .podium-glow-3{box-shadow:0 0 8px rgba(205,127,50,0.3);}
+
+  /* LOGO */
+  .logo-row{display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:8px;}
+  .logo-name{font-size:1.7rem;font-weight:800;letter-spacing:-1px;line-height:1;}
+  .logo-tagline{font-size:0.72rem;opacity:0.8;letter-spacing:1px;margin-top:1px;}
+
+  /* TICKET BADGE */
+  .ticket-badge{font-size:0.68rem;background:rgba(39,174,96,0.18);color:#27ae60;border-radius:5px;padding:1px 6px;display:inline-flex;align-items:center;gap:3px;margin-top:3px;}
+  .ticket-thumb-row{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px;}
+  .ticket-thumb{width:72px;height:72px;object-fit:cover;border-radius:8px;border:1.5px solid var(--border);cursor:pointer;}
+  .ticket-thumb-pdf{width:72px;height:72px;background:var(--blue-light);border-radius:8px;border:1.5px solid var(--border);display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:0.65rem;color:var(--blue);cursor:pointer;text-align:center;padding:4px;}
+  .upload-zone{border:2px dashed var(--border);border-radius:10px;padding:14px;text-align:center;cursor:pointer;color:var(--gray);font-size:0.82rem;transition:border-color 0.2s;}
+  .upload-zone:hover{border-color:var(--blue);}
+  .attach-list{display:flex;flex-direction:column;gap:6px;margin-top:6px;}
+  .attach-row{display:flex;align-items:center;gap:8px;background:#f8f8f8;border-radius:8px;padding:6px 10px;font-size:0.82rem;}
+  .attach-del{background:none;border:none;color:var(--gray);cursor:pointer;font-size:1rem;margin-left:auto;}
+
+  /* ADD DAY / IMPORT */
+  .itinerary-actions{display:flex;gap:8px;padding:12px 12px 0;}
+  .itinerary-actions button{flex:1;padding:10px;border-radius:10px;border:1.5px solid var(--border);background:white;font-size:0.85rem;font-weight:600;cursor:pointer;color:var(--dark);}
+  .itinerary-actions .btn-add-day{border-color:var(--pink);color:var(--pink);}
+  .itinerary-actions .btn-import{border-color:var(--blue);color:var(--blue);}
+  .day-edit-btn{background:rgba(255,255,255,0.15);border:none;color:white;border-radius:6px;padding:2px 7px;font-size:0.75rem;cursor:pointer;margin-left:2px;}
+
+  /* LIGHTBOX */
+  .lightbox{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.88);z-index:300;align-items:center;justify-content:center;}
+  .lightbox.show{display:flex;}
+  .lightbox img{max-width:92vw;max-height:88vh;border-radius:10px;}
+  .lightbox-close{position:absolute;top:16px;right:16px;background:none;border:none;color:white;font-size:2rem;cursor:pointer;}
 </style>
 </head>
 <body>
 
 <div class="header">
-  <h1>🇯🇵 東京 &amp; 湯澤滑雪</h1>
-  <p>2026 / 04 / 11 (六) — 04 / 18 (六)</p>
-  <div class="trip-info">
-    <span class="trip-badge">✈️ CX450/451</span>
-    <span class="trip-badge">🎿 Kagura</span>
-    <span class="trip-badge">♨️ KKR 湯澤雪國</span>
-    <span class="trip-badge">🏨 相鐵 FRESA INN</span>
+  <div class="logo-row">
+    <svg width="36" height="36" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <circle cx="18" cy="18" r="18" fill="rgba(255,255,255,0.22)"/>
+      <path d="M7 18L29 8L22 28L17.5 20L7 18Z" fill="white"/>
+      <line x1="17.5" y1="20" x2="29" y2="8" stroke="rgba(255,255,255,0.55)" stroke-width="1.5" stroke-linecap="round"/>
+    </svg>
+    <div>
+      <div class="logo-name">Tabi</div>
+      <div class="logo-tagline">TRAVEL PLANNER</div>
+    </div>
   </div>
+  <div id="trip-header-content"><!-- rendered by JS --></div>
+  <button class="header-edit-btn" onclick="openEditTripInfo()">✏️ 編輯</button>
 </div>
 
 <div class="tabs">
@@ -164,7 +235,19 @@
 
 <div class="page active" id="page-itinerary">
   <div id="itinerary-root"></div>
+  <div class="itinerary-actions">
+    <button class="btn-add-day" onclick="openAddDay()">＋ 新增天數</button>
+    <button class="btn-import" onclick="document.getElementById('import-file').click()">📊 匯入 Excel / CSV</button>
+    <button onclick="downloadTemplate()" style="border-color:var(--green);color:var(--green)">⬇️ 下載範本</button>
+  </div>
+  <input type="file" id="import-file" accept=".xlsx,.xls,.csv" style="display:none" onchange="importFile(this)">
   <div style="height:20px"></div>
+</div>
+
+<!-- LIGHTBOX -->
+<div class="lightbox" id="lightbox" onclick="closeLightbox()">
+  <button class="lightbox-close" onclick="closeLightbox()">✕</button>
+  <img id="lightbox-img" src="" alt="">
 </div>
 
 <!-- EXPENSE -->
@@ -191,14 +274,17 @@
     <div class="card">
       <div class="card-title">💱 匯率設定</div>
       <div class="card-body">
-        <div class="currency-row">
-          <button class="curr-btn active" id="curr-jpy" onclick="setCurrency('JPY')">日圓 JPY</button>
-          <button class="curr-btn" id="curr-twd" onclick="setCurrency('TWD')">台幣 TWD</button>
+        <div style="font-size:0.75rem;color:var(--gray);font-weight:600;margin-bottom:6px">旅遊地貨幣</div>
+        <div class="curr-grid" id="currency-grid"><!-- rendered by JS --></div>
+        <div style="font-size:0.75rem;color:var(--gray);font-weight:600;margin-bottom:6px">輸入金額單位</div>
+        <div class="input-mode-row">
+          <button id="mode-local" onclick="setInputMode(false)">用當地幣輸入</button>
+          <button id="mode-home" onclick="setInputMode(true)">用台幣 TWD 輸入</button>
         </div>
         <div class="rate-row">
           <span>1 TWD =</span>
-          <input type="number" id="rate-input" value="4.5" step="0.1" onchange="saveRate()">
-          <span>JPY</span>
+          <input type="number" id="rate-input" value="4.5" step="0.01" onchange="saveRate()">
+          <span id="rate-curr-label">JPY</span>
         </div>
       </div>
     </div>
@@ -208,7 +294,10 @@
       <div class="card-title">➕ 新增記帳</div>
       <div class="card-body">
         <div style="display:flex;flex-direction:column;gap:10px;">
-          <div class="exp-form-group"><label class="exp-form-label">項目名稱</label><input class="exp-input" id="exp-name" type="text" placeholder="例：敘敘苑晚餐"></div>
+          <div class="exp-row-2">
+            <div class="exp-form-group"><label class="exp-form-label">項目名稱</label><input class="exp-input" id="exp-name" type="text" placeholder="例：敘敘苑晚餐"></div>
+            <div class="exp-form-group"><label class="exp-form-label">日期</label><input class="exp-input" id="exp-date" type="date"></div>
+          </div>
           <div class="exp-row-2">
             <div class="exp-form-group"><label class="exp-form-label" id="amount-label">金額 (JPY)</label><input class="exp-input" id="exp-amount" type="number" placeholder="0"></div>
             <div class="exp-form-group"><label class="exp-form-label">類別</label>
@@ -253,7 +342,10 @@
       <div class="stat-box"><div class="stat-label">總支出 (JPY)</div><div class="stat-value pink" id="stat-total-jpy">¥0</div></div>
       <div class="stat-box"><div class="stat-label">總支出 (TWD)</div><div class="stat-value" id="stat-total-twd">NT$0</div></div>
     </div>
-    <div class="card"><div class="card-title">👤 每人支出</div><div id="person-stats"><div class="empty-msg">還沒有資料</div></div></div>
+    <div class="race-card" id="race-card">
+      <div class="race-title">🏎️ 消費賽道 <span style="font-size:0.75rem;opacity:0.6;font-weight:400">花最多 = 領先</span></div>
+      <div id="person-stats"><div class="empty-msg" style="color:rgba(255,255,255,0.4);padding:20px 0">還沒有資料</div></div>
+    </div>
     <div class="card"><div class="card-title">💸 結算清單</div><div id="settlement-list"><div class="empty-msg">還沒有資料</div></div></div>
     <div class="card"><div class="card-title">📊 類別分析</div><div id="cat-stats"><div class="empty-msg">還沒有資料</div></div></div>
     <div class="card">
@@ -265,6 +357,8 @@
     </div>
   </div>
 </div>
+
+<button class="fab-color" onclick="openColorSettings()" title="顏色設定">🎨</button>
 
 <!-- SHEET OVERLAY -->
 <div class="overlay" id="overlay" onclick="closeSheet()"></div>
@@ -283,21 +377,21 @@ const DEFAULT_DAYS = [
   { day:1, date:'4/11', weekday:'六', theme:'出發！飛往日本', items:[
     { id:'d1-1', time:'13:00', emoji:'✈️', place:'桃園機場 T1 起飛', activity:'CX450 — 出發！', note:'', address:'33000 台灣桃園市大園區航站南路9號', transport:'－', maps:'https://maps.google.com/?q=台灣桃園國際機場第一航廈', style:'flight' },
     { id:'d1-2', time:'17:15', emoji:'🛬', place:'成田機場 T2 抵達', activity:'CX450 抵達（東京時間）', note:'時差 +1h', address:'千葉県成田市三里塚御料牧場1-1', transport:'入境後前往 JR 成田特快 N\'EX 搭乘處', maps:'https://maps.google.com/?q=成田国際空港第2ターミナル', style:'flight' },
-    { id:'d1-3', time:'18:00', emoji:'🚆', place:'成田 → 東京站', activity:'N\'EX 直達', note:'建議預訂指定席', address:'成田機場 T2 JR 站 B1F', transport:'入境後跟「成田エクスプレス」指標走至 B1F，車程約 60 分。', maps:'https://maps.google.com/?q=成田空港第2ビル駅', style:'' },
-    { id:'d1-4', time:'19:30', emoji:'🚄', place:'東京站 → 越後湯澤', activity:'上越新幹線 Max/谷川號', note:'指定席建議預約', address:'東京都千代田区丸の内1-9-1（東京駅）', transport:'前往新幹線月台，搭「とき」或「たにがわ」號，車程約 1.5h。', maps:'https://maps.google.com/?q=東京駅新幹線', style:'' },
+    { id:'d1-3', time:'18:00', emoji:'🚆', place:'成田 → 東京站', activity:'N\'EX 直達', note:'建議預訂指定席', address:'成田機場 T2 JR 站 B1F', transport:'入境後跟「成田エクスプレス」指標走至 B1F，車程約 60 分。', maps:'https://maps.google.com/?q=成田空港第2ビル駅', style:'flight' },
+    { id:'d1-4', time:'19:30', emoji:'🚄', place:'東京站 → 越後湯澤', activity:'上越新幹線 Max/谷川號', note:'指定席建議預約', address:'東京都千代田区丸の内1-9-1（東京駅）', transport:'前往新幹線月台，搭「とき」或「たにがわ」號，車程約 1.5h。', maps:'https://maps.google.com/?q=東京駅新幹線', style:'flight' },
     { id:'d1-5', time:'21:00', emoji:'♨️', place:'KKR 湯澤雪國溫泉飯店', activity:'Check-in / 溫泉', note:'有溫泉！附近有 7-11', address:'〒949-6101 新潟県南魚沼郡湯沢町湯沢2427-1', transport:'越後湯澤站東口出站，步行約 8 分鐘。', maps:'https://maps.google.com/?q=KKR湯沢ゆきぐに+新潟県南魚沼郡湯沢町湯沢2427-1', style:'highlight' }
   ]},
   { day:2, date:'4/12', weekday:'日', theme:'🎿 Kagura 滑雪 Day 1', items:[
-    { id:'d2-1', time:'09:00', emoji:'🚌', place:'飯店 → Kagura', activity:'接駁巴士', note:'需確認接駁時間', address:'KKR 湯澤雪國溫泉飯店 大廳集合', transport:'飯店大廳集合，搭接駁巴士，車程約 35 分。', maps:'https://maps.google.com/?q=KKR湯沢ゆきぐに', style:'' },
+    { id:'d2-1', time:'09:00', emoji:'🚌', place:'飯店 → Kagura', activity:'接駁巴士', note:'需確認接駁時間', address:'KKR 湯澤雪國溫泉飯店 大廳集合', transport:'飯店大廳集合，搭接駁巴士，車程約 35 分。', maps:'https://maps.google.com/?q=KKR湯沢ゆきぐに', style:'flight' },
     { id:'d2-2', time:'09:30', emoji:'⛷️', place:'Kagura Ski Resort', activity:'滑雪整天・5.5h', note:'高海拔雪質好，含午餐', address:'〒949-6212 新潟県南魚沼郡湯沢町三俣686', transport:'接駁巴士直達，車程約 35 分。', maps:'https://maps.google.com/?q=かぐらスキー場+新潟県南魚沼郡湯沢町三俣686', style:'highlight' },
-    { id:'d2-3', time:'15:00', emoji:'🚌', place:'Kagura → 湯澤（返回）', activity:'接駁巴士', note:'回飯店泡溫泉', address:'Kagura Ski Resort 巴士站', transport:'搭接駁巴士返回，車程約 35 分。', maps:'https://maps.google.com/?q=かぐらスキー場', style:'' },
+    { id:'d2-3', time:'15:00', emoji:'🚌', place:'Kagura → 湯澤（返回）', activity:'接駁巴士', note:'回飯店泡溫泉', address:'Kagura Ski Resort 巴士站', transport:'搭接駁巴士返回，車程約 35 分。', maps:'https://maps.google.com/?q=かぐらスキー場', style:'flight' },
     { id:'d2-4', time:'18:00', emoji:'🍜', place:'湯澤市區晚餐', activity:'溫泉料理 / 蕎麥麵', note:'', address:'新潟県南魚沼郡湯沢町（越後湯沢駅周辺）', transport:'越後湯澤站步行範圍內餐廳。', maps:'https://maps.google.com/?q=越後湯沢駅+周辺+レストラン', style:'' }
   ]},
   { day:3, date:'4/13', weekday:'一', theme:'🎿 Kagura Day 2 → 移動東京', items:[
-    { id:'d3-1', time:'09:00', emoji:'🚌', place:'飯店 → Kagura（退房寄行李）', activity:'接駁巴士・35 分', note:'退房行李寄放', address:'KKR 湯澤雪國溫泉飯店 大廳', transport:'退房後寄放行李，搭接駁巴士至 Kagura。', maps:'https://maps.google.com/?q=KKR湯沢ゆきぐに', style:'' },
+    { id:'d3-1', time:'09:00', emoji:'🚌', place:'飯店 → Kagura（退房寄行李）', activity:'接駁巴士・35 分', note:'退房行李寄放', address:'KKR 湯澤雪國溫泉飯店 大廳', transport:'退房後寄放行李，搭接駁巴士至 Kagura。', maps:'https://maps.google.com/?q=KKR湯沢ゆきぐに', style:'flight' },
     { id:'d3-2', time:'09:30', emoji:'⛷️', place:'Kagura Ski Resort', activity:'滑雪整天・5.5h', note:'含午餐', address:'〒949-6212 新潟県南魚沼郡湯沢町三俣686', transport:'接駁巴士直達。', maps:'https://maps.google.com/?q=かぐらスキー場', style:'highlight' },
-    { id:'d3-3', time:'15:00', emoji:'🚌', place:'Kagura → 越後湯澤站（取行李）', activity:'巴士・35 分', note:'準備移動東京', address:'Kagura Ski Resort 巴士站', transport:'搭接駁巴士返回，取寄放的行李。', maps:'https://maps.google.com/?q=かぐらスキー場', style:'' },
-    { id:'d3-4', time:'15:30', emoji:'🚄', place:'湯澤 → 上野', activity:'上越新幹線・1h20', note:'指定席建議預約', address:'越後湯沢駅 新幹線月台', transport:'搭「たにがわ」或「とき」，在上野駅下車。', maps:'https://maps.google.com/?q=越後湯沢駅', style:'' },
+    { id:'d3-3', time:'15:00', emoji:'🚌', place:'Kagura → 越後湯澤站（取行李）', activity:'巴士・35 分', note:'準備移動東京', address:'Kagura Ski Resort 巴士站', transport:'搭接駁巴士返回，取寄放的行李。', maps:'https://maps.google.com/?q=かぐらスキー場', style:'flight' },
+    { id:'d3-4', time:'15:30', emoji:'🚄', place:'湯澤 → 上野', activity:'上越新幹線・1h20', note:'指定席建議預約', address:'越後湯沢駅 新幹線月台', transport:'搭「たにがわ」或「とき」，在上野駅下車。', maps:'https://maps.google.com/?q=越後湯沢駅', style:'flight' },
     { id:'d3-5', time:'17:00', emoji:'🏨', place:'相鐵 FRESA INN 上野御徒町', activity:'Check-in', note:'全家便利商店在樓下', address:'〒110-0005 東京都台東区上野5-2-4', transport:'上野駅「不忍口」步行約 3-5 分。', maps:'https://maps.google.com/?q=相鉄フレッサイン東京上野御徒町+東京都台東区上野5-2-4', style:'' },
     { id:'d3-6', time:'18:30', emoji:'🥩', place:'牛かつ もと村 秋葉原店', activity:'炸牛排晚餐・2h', note:'排隊名店，早點去', address:'〒101-0021 東京都千代田区外神田3-10-5', transport:'飯店步行約 12 分。或搭 JR 至秋葉原站步行 5 分。', maps:'https://maps.google.com/?q=牛かつもと村+秋葉原店+東京都千代田区外神田3-10-5', style:'' },
     { id:'d3-7', time:'20:30', emoji:'🎮', place:'TAITO Station 秋葉原', activity:'電玩中心・2h', note:'夾娃娃機 / 節奏遊戲', address:'〒101-0021 東京都千代田区外神田1-11-5', transport:'秋葉原站電気街口出站，步行約 3 分。', maps:'https://maps.google.com/?q=タイトーステーション秋葉原', style:'' }
@@ -332,19 +426,47 @@ const DEFAULT_DAYS = [
   ]},
   { day:8, date:'4/18', weekday:'六', theme:'回家！', items:[
     { id:'d8-1', time:'09:00', emoji:'🧳', place:'相鐵 FRESA INN 退房', activity:'收拾・1h', note:'', address:'〒110-0005 東京都台東区上野5-2-4', transport:'退房後步行至京成上野站搭乘 Skyliner。', maps:'https://maps.google.com/?q=相鉄フレッサイン東京上野御徒町', style:'' },
-    { id:'d8-2', time:'11:00', emoji:'🚆', place:'京成 Skyliner・上野 → 成田', activity:'41 分', note:'最晚 12:00 到機場', address:'〒110-0005 東京都台東区上野7-1-1（京成上野駅）', transport:'飯店步行至京成上野站約 5 分，搭 Skyliner，車程 41 分。', maps:'https://maps.google.com/?q=京成上野駅', style:'' },
+    { id:'d8-2', time:'11:00', emoji:'🚆', place:'京成 Skyliner・上野 → 成田', activity:'41 分', note:'最晚 12:00 到機場', address:'〒110-0005 東京都台東区上野7-1-1（京成上野駅）', transport:'飯店步行至京成上野站約 5 分，搭 Skyliner，車程 41 分。', maps:'https://maps.google.com/?q=京成上野駅', style:'flight' },
     { id:'d8-3', time:'15:45', emoji:'✈️', place:'成田機場 T2 起飛', activity:'CX451・座位 56J', note:'', address:'千葉県成田市三里塚御料牧場1-1 第2ターミナル', transport:'Skyliner 抵達後前往 T2 辦理登機。', maps:'https://maps.google.com/?q=成田国際空港第2ターミナル', style:'flight' },
     { id:'d8-4', time:'18:25', emoji:'🏠', place:'桃園機場 T1 抵達', activity:'旅程結束！', note:'', address:'33000 台灣桃園市大園區航站南路9號', transport:'－', maps:'', style:'flight' }
   ]}
 ];
 
+// =================== CURRENCIES ===================
+const CURRENCIES = [
+  {code:'JPY',flag:'🇯🇵',name:'日圓',rate:4.5},
+  {code:'KRW',flag:'🇰🇷',name:'韓元',rate:42},
+  {code:'USD',flag:'🇺🇸',name:'美元',rate:0.031},
+  {code:'EUR',flag:'🇪🇺',name:'歐元',rate:0.029},
+  {code:'GBP',flag:'🇬🇧',name:'英鎊',rate:0.025},
+  {code:'HKD',flag:'🇭🇰',name:'港幣',rate:0.243},
+  {code:'THB',flag:'🇹🇭',name:'泰銖',rate:1.12},
+  {code:'VND',flag:'🇻🇳',name:'越盾',rate:790},
+  {code:'SGD',flag:'🇸🇬',name:'新幣',rate:0.041},
+  {code:'AUD',flag:'🇦🇺',name:'澳幣',rate:0.048},
+  {code:'MYR',flag:'🇲🇾',name:'馬幣',rate:0.145},
+  {code:'CAD',flag:'🇨🇦',name:'加幣',rate:0.043},
+];
+const CURR_SYMBOLS = {JPY:'¥',KRW:'₩',USD:'$',EUR:'€',GBP:'£',HKD:'HK$',THB:'฿',VND:'₫',SGD:'S$',AUD:'A$',MYR:'RM',CAD:'C$'};
+function currSymbol(code){ return CURR_SYMBOLS[code||appState.tripCurrency]||(code||appState.tripCurrency); }
+
 // =================== STATE ===================
+const DEFAULT_TRIP_INFO = {
+  title:'🇯🇵 東京 &amp; 湯澤滑雪',
+  subtitle:'2026 / 04 / 11 (六) — 04 / 18 (六)',
+  badges:['✈️ CX450/451','🎿 Kagura','♨️ KKR 湯澤雪國','🏨 相鐵 FRESA INN']
+};
 let appState = JSON.parse(localStorage.getItem('trip_state_v2') || 'null') || {
   days: JSON.parse(JSON.stringify(DEFAULT_DAYS)),
-  people: ['小明','小美'], currency:'JPY', rate:4.5, expenses:[]
+  people: ['小明','小美'], currency:'JPY', rate:4.5, expenses:[],
+  tripCurrency:'JPY', inputInHome:false,
+  tripInfo: {...DEFAULT_TRIP_INFO}
 };
-// ensure days exist (migration)
+// migrations
 if (!appState.days) appState.days = JSON.parse(JSON.stringify(DEFAULT_DAYS));
+if (!appState.tripCurrency) appState.tripCurrency = (appState.currency==='TWD')?'JPY':appState.currency||'JPY';
+if (appState.inputInHome===undefined) appState.inputInHome = (appState.currency==='TWD');
+if (!appState.tripInfo) appState.tripInfo = {...DEFAULT_TRIP_INFO};
 
 function saveState() { localStorage.setItem('trip_state_v2', JSON.stringify(appState)); }
 
@@ -357,6 +479,7 @@ function renderItinerary() {
         <span class="day-badge">Day ${day.day}</span>
         <span>${day.date} (${day.weekday})</span>
         <span class="day-subtitle">${day.theme}</span>
+        <button class="day-edit-btn" onclick="openEditDay(${day.day})">✏️</button>
         <button class="day-add-btn" onclick="openAddItem(${day.day})">＋ 新增</button>
       </div>
       <div class="day-body" id="day-body-${day.day}">
@@ -372,6 +495,7 @@ function rowClass(style) {
 }
 
 function renderItem(item, dayNum) {
+  const hasTickets = item.attachments && item.attachments.length > 0;
   return `<div class="${rowClass(item.style)}" id="item-${item.id}">
     <div class="time-col">${item.time}</div>
     <div class="item-icon">${item.emoji}</div>
@@ -379,7 +503,8 @@ function renderItem(item, dayNum) {
       <div class="item-place">${item.place}</div>
       ${item.activity ? `<div class="item-activity">${item.activity}</div>` : ''}
       ${item.note ? `<div class="item-note">${item.note}</div>` : ''}
-      ${item.address ? `<div class="item-transport">📍 點此查看地址與交通</div>` : ''}
+      ${hasTickets ? `<div class="ticket-badge">🎟️ ${item.attachments.length} 張票券</div>` : ''}
+      ${item.address && !hasTickets ? `<div class="item-transport">📍 點此查看地址與交通</div>` : ''}
     </div>
     <div class="item-actions">
       <button class="action-btn" title="編輯" onclick="openEditItem('${item.id}',${dayNum})">✏️</button>
@@ -409,12 +534,24 @@ function openItemInfo(id, dayNum) {
   const day = appState.days.find(d => d.day === dayNum);
   const item = day.items.find(i => i.id === id);
   const mapsBtn = item.maps ? `<a class="map-btn" href="${item.maps}" target="_blank">🗺️ 在 Google Maps 開啟</a>` : '';
+  const tickets = (item.attachments || []);
+  const ticketHTML = tickets.length ? `
+    <div class="info-row"><span class="info-icon">🎟️</span><div class="info-content">
+      <div class="info-label">票券 / 附件</div>
+      <div class="ticket-thumb-row">
+        ${tickets.map((a,i) => a.type && a.type.startsWith('image/')
+          ? `<img class="ticket-thumb" src="${a.data}" alt="${a.name}" onclick="openLightbox('${id}',${i})">`
+          : `<div class="ticket-thumb-pdf" onclick="downloadAttachment('${id}',${i})">📄<br>${a.name}</div>`
+        ).join('')}
+      </div>
+    </div></div>` : '';
   const body = `
     <div class="info-row"><span class="info-icon">📍</span><div class="info-content"><div class="info-label">地址</div><div class="info-text">${item.address||'－'}</div></div></div>
     <div class="info-row"><span class="info-icon">🚆</span><div class="info-content"><div class="info-label">交通指引</div><div class="info-text">${item.transport||'－'}</div></div></div>
     ${item.note ? `<div class="info-row"><span class="info-icon">💡</span><div class="info-content"><div class="info-label">備註</div><div class="info-text">${item.note}</div></div></div>` : ''}
+    ${ticketHTML}
     ${mapsBtn}
-    <button class="edit-mode-btn" onclick="closeSheet();setTimeout(()=>openEditItem('${id}',${dayNum}),200)">✏️ 編輯此行程</button>`;
+    <button class="edit-mode-btn" onclick="closeSheet();setTimeout(()=>openEditItem('${id}',${dayNum}),200)">✏️ 編輯此行程 / 上傳票券</button>`;
   openSheet(`${item.emoji} ${item.place}`, body);
 }
 
@@ -431,7 +568,7 @@ function openEditItem(id, dayNum) {
         <select class="form-select" id="ef-style">
           <option value="" ${item.style===''?'selected':''}>一般</option>
           <option value="highlight" ${item.style==='highlight'?'selected':''}>粉色重點</option>
-          <option value="flight" ${item.style==='flight'?'selected':''}>藍色航班</option>
+          <option value="flight" ${item.style==='flight'?'selected':''}>藍色交通</option>
         </select>
       </div>
     </div>
@@ -441,6 +578,21 @@ function openEditItem(id, dayNum) {
     <div class="form-group"><label class="form-label">地址</label><input class="form-input" id="ef-address" value="${escHtml(item.address)}"></div>
     <div class="form-group"><label class="form-label">交通指引</label><textarea class="form-textarea" id="ef-transport">${escHtml(item.transport)}</textarea></div>
     <div class="form-group"><label class="form-label">Google Maps 連結</label><input class="form-input" id="ef-maps" value="${escHtml(item.maps)}" type="url"></div>
+    <div class="form-group">
+      <label class="form-label">🎟️ 票券 / 附件</label>
+      <div class="upload-zone" onclick="document.getElementById('ef-ticket-input').click()">
+        點此上傳票券圖片 或 PDF（可多張）
+      </div>
+      <input type="file" id="ef-ticket-input" accept="image/*,.pdf" multiple style="display:none" onchange="handleTicketUpload(this,'${id}',${dayNum})">
+      <div class="attach-list" id="ef-attach-list">
+        ${(item.attachments||[]).map((a,i)=>`
+          <div class="attach-row">
+            ${a.type&&a.type.startsWith('image/')?`<img src="${a.data}" style="width:36px;height:36px;object-fit:cover;border-radius:6px">`:'📄'}
+            <span style="flex:1;font-size:0.8rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${a.name}</span>
+            <button class="attach-del" onclick="removeTicket('${id}',${dayNum},${i})">✕</button>
+          </div>`).join('')}
+      </div>
+    </div>
     <button class="btn-save" onclick="saveEditItem()">💾 儲存</button>
     <button class="btn-delete" onclick="deleteItem('${id}',${dayNum});closeSheet()">🗑️ 刪除此行程</button>`;
   openSheet('✏️ 編輯行程', body);
@@ -472,7 +624,7 @@ function openAddItem(dayNum) {
         <select class="form-select" id="af-style">
           <option value="">一般</option>
           <option value="highlight">粉色重點</option>
-          <option value="flight">藍色航班</option>
+          <option value="flight">藍色交通</option>
         </select>
       </div>
     </div>
@@ -500,7 +652,8 @@ function saveAddItem() {
     note: document.getElementById('af-note').value,
     address: document.getElementById('af-address').value,
     transport: document.getElementById('af-transport').value,
-    maps: document.getElementById('af-maps').value
+    maps: document.getElementById('af-maps').value,
+    attachments: []
   };
   day.items.push(newItem);
   saveState(); renderItinerary(); closeSheet();
@@ -550,13 +703,47 @@ function renderSplitOptions(){
     appState.people.map(p=>`<span class="split-toggle ${!splitAll&&splitSelected.has(p)?'active':''}" onclick="toggleSplitPerson('${p}')">${p}</span>`).join('');
 }
 function toggleSplitAll(){ splitAll=true; splitSelected=new Set(appState.people); renderSplitOptions(); }
-function toggleSplitPerson(name){ splitAll=false; if(splitSelected.has(name)) splitSelected.delete(name); else splitSelected.add(name); if(!splitSelected.size) splitSelected=new Set(appState.people); renderSplitOptions(); }
+function toggleSplitPerson(name){
+  if (splitAll) {
+    // 從「全部」模式進入個別選擇：只選這一個人
+    splitAll=false; splitSelected=new Set([name]);
+  } else {
+    if (splitSelected.has(name)) {
+      splitSelected.delete(name);
+      // 全部取消 → 回到全部模式
+      if (!splitSelected.size) { splitAll=true; splitSelected=new Set(appState.people); }
+    } else {
+      splitSelected.add(name);
+    }
+  }
+  renderSplitOptions();
+}
 
 // CURRENCY
-function setCurrency(c){ appState.currency=c; saveState(); document.getElementById('curr-jpy').classList.toggle('active',c==='JPY'); document.getElementById('curr-twd').classList.toggle('active',c==='TWD'); document.getElementById('amount-label').textContent=`金額 (${c})`; }
-function saveRate(){ appState.rate=parseFloat(document.getElementById('rate-input').value)||4.5; saveState(); }
-function toJPY(a){ return appState.currency==='TWD'?Math.round(a*appState.rate):a; }
-function toTWD(j){ return Math.round(j/appState.rate); }
+function renderCurrencyGrid(){
+  const g=document.getElementById('currency-grid'); if(!g) return;
+  g.innerHTML=CURRENCIES.map(c=>`
+    <div class="curr-cell ${c.code===appState.tripCurrency?'active':''}" onclick="setTripCurrency('${c.code}')">
+      <span class="curr-flag">${c.flag}</span>${c.code}<br><span style="font-weight:400;opacity:0.7">${c.name}</span>
+    </div>`).join('');
+  document.getElementById('rate-curr-label').textContent=appState.tripCurrency;
+  document.getElementById('rate-input').value=appState.rate;
+  document.getElementById('mode-local').classList.toggle('active',!appState.inputInHome);
+  document.getElementById('mode-home').classList.toggle('active',appState.inputInHome);
+  document.getElementById('amount-label').textContent=`金額 (${appState.inputInHome?'TWD':appState.tripCurrency})`;
+}
+function setTripCurrency(code){
+  appState.tripCurrency=code;
+  const preset=CURRENCIES.find(c=>c.code===code);
+  if(preset) appState.rate=preset.rate;
+  saveState(); renderCurrencyGrid();
+}
+function setInputMode(inHome){ appState.inputInHome=inHome; saveState(); renderCurrencyGrid(); }
+function saveRate(){ appState.rate=parseFloat(document.getElementById('rate-input').value)||1; saveState(); }
+function toJPY(a){ return appState.inputInHome?Math.round(a*appState.rate):a; }   // local storage
+function toTWD(j){ return Math.round(j/appState.rate); }                            // to home (TWD)
+// keep old setCurrency for legacy compat
+function setCurrency(c){ if(c==='TWD'){appState.inputInHome=true;}else{appState.tripCurrency=c;appState.inputInHome=false;} saveState(); renderCurrencyGrid(); }
 
 // EXPENSE
 let currentFilter='全部';
@@ -567,8 +754,10 @@ function addExpense(){
   const payer=document.getElementById('exp-payer').value;
   const note=document.getElementById('exp-note').value.trim();
   if(!name||isNaN(amount)||amount<=0){alert('請填寫名稱與金額');return;}
+  const dateVal=document.getElementById('exp-date').value;
+  const dateStr=dateVal?new Date(dateVal).toLocaleDateString('zh-TW'):new Date().toLocaleDateString('zh-TW');
   const split=splitAll?[...appState.people]:[...splitSelected];
-  appState.expenses.push({id:Date.now(),name,amount:toJPY(amount),cat,payer,note,split,date:new Date().toLocaleDateString('zh-TW')});
+  appState.expenses.push({id:Date.now(),name,amount:toJPY(amount),cat,payer,note,split,date:dateStr});
   saveState();
   document.getElementById('exp-name').value=''; document.getElementById('exp-amount').value=''; document.getElementById('exp-note').value='';
   renderExpenses();
@@ -582,7 +771,7 @@ function renderExpenses(){
   c.innerHTML=[...list].reverse().map(e=>`
     <div class="expense-item">
       <div class="exp-top"><div><div class="exp-name">${e.name}</div><div class="exp-meta">${e.date} · 付款：${e.payer}</div></div>
-      <div style="display:flex;align-items:center;gap:4px"><div class="exp-amount">¥${e.amount.toLocaleString()}</div><button class="exp-del" onclick="deleteExpense(${e.id})">✕</button></div></div>
+      <div style="display:flex;align-items:center;gap:6px"><div class="exp-amount">${currSymbol()}${e.amount.toLocaleString()} <span style="font-size:0.72rem;opacity:0.6">(NT$${toTWD(e.amount).toLocaleString()})</span></div><button class="exp-del" onclick="if(confirm('確定刪除這筆帳？'))deleteExpense(${e.id})">🗑️ 刪除</button></div></div>
       <div class="exp-tags"><span class="tag tag-cat">${e.cat}</span>${e.split.map(p=>`<span class="tag tag-person">${p}</span>`).join('')}${e.note?`<span class="tag" style="background:#f0f0f0;color:#666">${e.note}</span>`:''}</div>
     </div>`).join('');
 }
@@ -591,19 +780,50 @@ function renderExpenses(){
 function renderStats(){
   const expenses=appState.expenses;
   const totalJPY=expenses.reduce((s,e)=>s+e.amount,0);
-  document.getElementById('stat-total-jpy').textContent='¥'+totalJPY.toLocaleString();
+  document.querySelector('#stat-total-jpy').previousElementSibling.textContent=`總支出 (${appState.tripCurrency})`;
+  document.getElementById('stat-total-jpy').textContent=currSymbol()+totalJPY.toLocaleString();
   document.getElementById('stat-total-twd').textContent='NT$'+toTWD(totalJPY).toLocaleString();
   const paid={},shouldPay={};
   appState.people.forEach(p=>{paid[p]=0;shouldPay[p]=0;});
   expenses.forEach(e=>{if(paid[e.payer]!==undefined) paid[e.payer]+=e.amount; const sh=e.amount/e.split.length; e.split.forEach(p=>{if(shouldPay[p]!==undefined) shouldPay[p]+=sh;});});
-  const maxPaid=Math.max(...Object.values(paid),1);
+  const maxShare=Math.max(...Object.values(shouldPay),1);
   const ps=document.getElementById('person-stats');
-  if(!expenses.length){ps.innerHTML='<div class="empty-msg">還沒有資料</div>';}
-  else ps.innerHTML=appState.people.map(p=>{
-    const bal=paid[p]-shouldPay[p],cls=bal>=0?'positive':'negative';
-    const txt=bal>=0?`多付 ¥${Math.round(bal).toLocaleString()}`:`應收 ¥${Math.abs(Math.round(bal)).toLocaleString()}`;
-    return `<div class="person-stat"><div class="ps-top"><div><div class="ps-name">${p}</div><div class="ps-paid">已付 ¥${Math.round(paid[p]).toLocaleString()} · 應付 ¥${Math.round(shouldPay[p]).toLocaleString()}</div></div><div class="ps-balance ${cls}">${txt}</div></div><div class="ps-bar-wrap"><div class="ps-bar" style="width:${Math.round(paid[p]/maxPaid*100)}%"></div></div></div>`;
-  }).join('');
+  const RANK_ICONS=['🥇','🥈','🥉','4️⃣','5️⃣','6️⃣','7️⃣','8️⃣'];
+  const GLOW=['podium-glow-1','podium-glow-2','podium-glow-3'];
+  const BAR_COLORS=[
+    'linear-gradient(90deg,#f9d423,#f83600)',
+    'linear-gradient(90deg,#a8c0ff,#3f2b96)',
+    'linear-gradient(90deg,#43e97b,#38f9d7)',
+    'linear-gradient(90deg,#fa709a,#fee140)',
+    'linear-gradient(90deg,#4facfe,#00f2fe)',
+    'linear-gradient(90deg,#f093fb,#f5576c)',
+    'linear-gradient(90deg,#fda085,#f6d365)',
+    'linear-gradient(90deg,#96fbc4,#f9f586)'
+  ];
+  const CARS=['🏎️','🚗','🚙','🚕','🚌','🚑','🚒','🛻'];
+  if(!expenses.length){
+    ps.innerHTML='<div class="empty-msg" style="color:rgba(255,255,255,0.4);padding:20px 0">還沒有資料</div>';
+  } else {
+    const sorted=[...appState.people].sort((a,b)=>shouldPay[b]-shouldPay[a]);
+    ps.innerHTML=sorted.map((p,rank)=>{
+      const pct=Math.round(shouldPay[p]/maxShare*100);
+      const bal=paid[p]-shouldPay[p];
+      const balTxt=bal>=0?`<span style="color:#43e97b">多付 ${currSymbol()}${Math.round(bal).toLocaleString()}</span>`:`<span style="color:#fa709a">還欠 ${currSymbol()}${Math.abs(Math.round(bal)).toLocaleString()}</span>`;
+      return `<div class="race-lane">
+        <div class="race-top">
+          <span class="race-rank">${RANK_ICONS[rank]||'🎖️'}</span>
+          <span class="race-name">${p}</span>
+          <div class="race-amount">${currSymbol()}${Math.round(shouldPay[p]).toLocaleString()}<span>${balTxt}</span></div>
+        </div>
+        <div class="race-track">
+          <div class="race-bar ${GLOW[rank]||''}" style="width:${pct}%;background:${BAR_COLORS[rank%BAR_COLORS.length]}">
+            <span class="race-car">${CARS[rank%CARS.length]}</span>
+          </div>
+        </div>
+        <div class="race-pct">NT$ ${toTWD(Math.round(shouldPay[p])).toLocaleString()} · 分攤後應付 ${pct}%</div>
+      </div>`;
+    }).join('');
+  }
   const balance={};
   appState.people.forEach(p=>{balance[p]=Math.round(paid[p]-shouldPay[p]);});
   const creditors=appState.people.filter(p=>balance[p]>0).sort((a,b)=>balance[b]-balance[a]);
@@ -620,7 +840,7 @@ function renderStats(){
   const icons={餐飲:'🍜',交通:'🚆',住宿:'🏨',購物:'🛍️',票券:'🎟️',其他:'📦'};
   catEl.innerHTML=Object.entries(cats).sort((a,b)=>b[1]-a[1]).map(([cat,amt])=>{
     const pct=Math.round(amt/totalJPY*100);
-    return `<div class="person-stat"><div class="ps-top"><div class="ps-name">${icons[cat]||'📦'} ${cat}</div><div class="ps-balance">${pct}%</div></div><div style="font-size:0.8rem;color:var(--gray);margin-top:2px">¥${Math.round(amt).toLocaleString()} (NT$${toTWD(amt).toLocaleString()})</div><div class="ps-bar-wrap" style="margin-top:6px"><div class="ps-bar" style="width:${pct}%"></div></div></div>`;
+    return `<div class="person-stat"><div class="ps-top"><div class="ps-name">${icons[cat]||'📦'} ${cat}</div><div class="ps-balance">${pct}%</div></div><div style="font-size:0.8rem;color:var(--gray);margin-top:2px">${currSymbol()}${Math.round(amt).toLocaleString()} (NT$${toTWD(amt).toLocaleString()})</div><div class="ps-bar-wrap" style="margin-top:6px"><div class="ps-bar" style="width:${pct}%"></div></div></div>`;
   }).join('');
 }
 
@@ -635,15 +855,347 @@ function exportCSV(){
 }
 function copyJSON(){ navigator.clipboard.writeText(JSON.stringify(appState.expenses,null,2)).then(()=>alert('JSON 已複製！')); }
 
+// =================== COLOR CUSTOMIZATION ===================
+const DEFAULT_COLORS = { pink:'#e8748a', blue:'#3a7bd5' };
+
+function getColors() {
+  return JSON.parse(localStorage.getItem('trip_colors') || 'null') || {...DEFAULT_COLORS};
+}
+
+function applyColors(colors) {
+  if (!colors) colors = getColors();
+  const r = document.documentElement.style;
+  r.setProperty('--pink', colors.pink);
+  r.setProperty('--pink-light', hexToLight(colors.pink, 0.15));
+  r.setProperty('--blue', colors.blue);
+  r.setProperty('--blue-light', hexToLight(colors.blue, 0.12));
+  r.setProperty('--snow', hexToLight(colors.blue, 0.08));
+}
+
+function hexToLight(hex, alpha) {
+  const r=parseInt(hex.slice(1,3),16), g=parseInt(hex.slice(3,5),16), b=parseInt(hex.slice(5,7),16);
+  return `rgba(${r},${g},${b},${alpha})`;
+}
+
+function openColorSettings() {
+  const colors = getColors();
+  const swatchRow = (id, swatches) =>
+    `<div class="color-picker-row">
+      <input type="color" class="clr-input" id="${id}" value="${colors[id==='clr-pink'?'pink':'blue']}">
+      <div style="display:flex;gap:6px;flex-wrap:wrap">
+        ${swatches.map(c=>`<div class="color-swatch" style="background:${c}" onclick="document.getElementById('${id}').value='${c}';previewColor('${id}','${c}')"></div>`).join('')}
+      </div>
+    </div>`;
+  const body = `
+    <div class="form-group">
+      <label class="form-label">✨ 重點色（highlight 行）</label>
+      ${swatchRow('clr-pink',['#e8748a','#ff6b9d','#f97316','#8b5cf6','#ef4444','#ec4899'])}
+    </div>
+    <div class="form-group">
+      <label class="form-label">✈️ 交通色（所有交通行）</label>
+      ${swatchRow('clr-blue',['#3a7bd5','#0ea5e9','#6366f1','#059669','#0891b2','#7c3aed'])}
+    </div>
+    <button class="btn-save" onclick="saveColors()">💾 套用顏色</button>
+    <button class="edit-mode-btn" onclick="resetColors()">↺ 恢復預設顏色</button>`;
+  openSheet('🎨 顏色設定', body);
+  // live preview
+  setTimeout(() => {
+    document.getElementById('clr-pink').addEventListener('input', e => previewColor('clr-pink', e.target.value));
+    document.getElementById('clr-blue').addEventListener('input', e => previewColor('clr-blue', e.target.value));
+  }, 50);
+}
+
+function previewColor(id, val) {
+  const cur = getColors();
+  if (id === 'clr-pink') applyColors({...cur, pink: val});
+  else applyColors({...cur, blue: val});
+}
+
+function saveColors() {
+  const pink = document.getElementById('clr-pink').value;
+  const blue = document.getElementById('clr-blue').value;
+  const colors = { pink, blue };
+  localStorage.setItem('trip_colors', JSON.stringify(colors));
+  applyColors(colors);
+  closeSheet();
+}
+
+function resetColors() {
+  localStorage.removeItem('trip_colors');
+  applyColors(DEFAULT_COLORS);
+  closeSheet();
+}
+
+// =================== TRIP INFO HEADER ===================
+function renderHeader() {
+  const ti = appState.tripInfo || DEFAULT_TRIP_INFO;
+  document.getElementById('trip-header-content').innerHTML = `
+    <h1 style="font-size:1.4rem;font-weight:700">${ti.title}</h1>
+    <p style="font-size:0.85rem;opacity:0.9;margin-top:4px">${ti.subtitle}</p>
+    <div class="trip-info" style="display:flex;justify-content:center;gap:10px;margin-top:12px;flex-wrap:wrap">
+      ${(ti.badges||[]).map(b=>`<span class="trip-badge">${b}</span>`).join('')}
+    </div>`;
+}
+
+function openEditTripInfo() {
+  const ti = appState.tripInfo || DEFAULT_TRIP_INFO;
+  const body = `
+    <div class="form-group"><label class="form-label">行程名稱（支援 Emoji）</label>
+      <input class="form-input" id="ti-title" value="${ti.title.replace(/&amp;/g,'&')}"></div>
+    <div class="form-group"><label class="form-label">日期 / 副標題</label>
+      <input class="form-input" id="ti-subtitle" value="${ti.subtitle}"></div>
+    <div class="form-group"><label class="form-label">標籤（每行一個）</label>
+      <textarea class="form-textarea" id="ti-badges" style="min-height:100px">${(ti.badges||[]).join('\n')}</textarea></div>
+    <button class="btn-save" onclick="saveEditTripInfo()">💾 儲存</button>`;
+  openSheet('✏️ 編輯行程資訊', body);
+}
+
+function saveEditTripInfo() {
+  const raw = document.getElementById('ti-title').value.trim();
+  appState.tripInfo = {
+    title: raw.replace(/&/g,'&amp;'),
+    subtitle: document.getElementById('ti-subtitle').value.trim(),
+    badges: document.getElementById('ti-badges').value.split('\n').map(s=>s.trim()).filter(Boolean)
+  };
+  saveState(); renderHeader(); closeSheet();
+}
+
+// Migrate existing localStorage data: apply 'flight' style to transport emojis
+function migrateTransportStyles() {
+  const TRANSPORT_EMOJIS = new Set(['✈️','🛬','🛫','🚆','🚄','🚂','🚌','🚍','🚇','🚊','🚉','🛩️','🚁','⛵','🚢']);
+  let changed = false;
+  appState.days.forEach(day => {
+    day.items.forEach(item => {
+      if (item.style === '' && TRANSPORT_EMOJIS.has(item.emoji)) {
+        item.style = 'flight'; changed = true;
+      }
+      if (!item.attachments) { item.attachments = []; changed = true; }
+    });
+  });
+  if (changed) saveState();
+}
+
+// =================== TICKET ATTACHMENTS ===================
+function handleTicketUpload(input, id, dayNum) {
+  const day = appState.days.find(d => d.day === dayNum);
+  const item = day.items.find(i => i.id === id);
+  if (!item.attachments) item.attachments = [];
+  const files = Array.from(input.files);
+  let loaded = 0;
+  files.forEach(file => {
+    const reader = new FileReader();
+    reader.onload = e => {
+      item.attachments.push({ name: file.name, data: e.target.result, type: file.type });
+      loaded++;
+      if (loaded === files.length) {
+        saveState();
+        // refresh attach list in form
+        const list = document.getElementById('ef-attach-list');
+        if (list) list.innerHTML = item.attachments.map((a,i)=>`
+          <div class="attach-row">
+            ${a.type&&a.type.startsWith('image/')?`<img src="${a.data}" style="width:36px;height:36px;object-fit:cover;border-radius:6px">`:'📄'}
+            <span style="flex:1;font-size:0.8rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${a.name}</span>
+            <button class="attach-del" onclick="removeTicket('${id}',${dayNum},${i})">✕</button>
+          </div>`).join('');
+      }
+    };
+    reader.readAsDataURL(file);
+  });
+  input.value = '';
+}
+
+function removeTicket(id, dayNum, idx) {
+  const day = appState.days.find(d => d.day === dayNum);
+  const item = day.items.find(i => i.id === id);
+  item.attachments.splice(idx, 1);
+  saveState();
+  // re-open edit to refresh
+  closeSheet(); setTimeout(() => openEditItem(id, dayNum), 200);
+}
+
+function openLightbox(id, idx) {
+  const item = appState.days.flatMap(d=>d.items).find(i=>i.id===id);
+  const att = (item.attachments||[])[idx];
+  if (!att) return;
+  document.getElementById('lightbox-img').src = att.data;
+  document.getElementById('lightbox').classList.add('show');
+}
+function closeLightbox() { document.getElementById('lightbox').classList.remove('show'); }
+
+function downloadAttachment(id, idx) {
+  const item = appState.days.flatMap(d=>d.items).find(i=>i.id===id);
+  const att = (item.attachments||[])[idx];
+  if (!att) return;
+  const a = document.createElement('a'); a.href = att.data; a.download = att.name; a.click();
+}
+
+// =================== DAY MANAGEMENT ===================
+function openAddDay() {
+  const nextDay = appState.days.length + 1;
+  const body = `
+    <div class="form-row-2">
+      <div class="form-group"><label class="form-label">日期（如 5/20）</label><input class="form-input" id="ad-date" placeholder="5/20"></div>
+      <div class="form-group"><label class="form-label">星期（如 三）</label><input class="form-input" id="ad-weekday" placeholder="三"></div>
+    </div>
+    <div class="form-group"><label class="form-label">主題</label><input class="form-input" id="ad-theme" placeholder="例：京都散策"></div>
+    <button class="btn-save" onclick="saveAddDay()">＋ 新增這天</button>`;
+  currentEditDay = nextDay;
+  openSheet(`＋ 新增 Day ${nextDay}`, body);
+}
+
+function saveAddDay() {
+  const date = document.getElementById('ad-date').value.trim();
+  const weekday = document.getElementById('ad-weekday').value.trim();
+  const theme = document.getElementById('ad-theme').value.trim() || '新的一天';
+  if (!date) { alert('請填寫日期'); return; }
+  const dayNum = appState.days.length + 1;
+  appState.days.push({ day: dayNum, date, weekday, theme, items: [] });
+  saveState(); renderItinerary(); closeSheet();
+}
+
+function openEditDay(dayNum) {
+  const day = appState.days.find(d => d.day === dayNum);
+  const body = `
+    <div class="form-row-2">
+      <div class="form-group"><label class="form-label">日期</label><input class="form-input" id="ed-date" value="${day.date}"></div>
+      <div class="form-group"><label class="form-label">星期</label><input class="form-input" id="ed-weekday" value="${day.weekday}"></div>
+    </div>
+    <div class="form-group"><label class="form-label">主題</label><input class="form-input" id="ed-theme" value="${escHtml(day.theme)}"></div>
+    <button class="btn-save" onclick="saveEditDay(${dayNum})">💾 儲存</button>
+    <button class="btn-delete" onclick="confirmDeleteDay(${dayNum})">🗑️ 刪除這整天</button>`;
+  openSheet(`✏️ 編輯 Day ${dayNum}`, body);
+}
+
+function saveEditDay(dayNum) {
+  const day = appState.days.find(d => d.day === dayNum);
+  day.date = document.getElementById('ed-date').value;
+  day.weekday = document.getElementById('ed-weekday').value;
+  day.theme = document.getElementById('ed-theme').value;
+  saveState(); renderItinerary(); closeSheet();
+}
+
+function confirmDeleteDay(dayNum) {
+  if (!confirm(`確定要刪除 Day ${dayNum} 的所有行程嗎？`)) return;
+  appState.days = appState.days.filter(d => d.day !== dayNum);
+  // re-number days
+  appState.days.forEach((d, i) => d.day = i + 1);
+  saveState(); renderItinerary(); closeSheet();
+}
+
+// =================== EXCEL / CSV IMPORT ===================
+function importFile(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const ext = file.name.split('.').pop().toLowerCase();
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      let rows;
+      if (ext === 'csv') {
+        rows = parseCSV(e.target.result);
+      } else {
+        const wb = XLSX.read(e.target.result, { type: 'array' });
+        const ws = wb.Sheets[wb.SheetNames[0]];
+        rows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' });
+      }
+      processImport(rows);
+    } catch(err) {
+      alert('匯入失敗：' + err.message);
+    }
+  };
+  if (ext === 'csv') reader.readAsText(file, 'UTF-8');
+  else reader.readAsArrayBuffer(file);
+  input.value = '';
+}
+
+function parseCSV(text) {
+  return text.trim().split('\n').map(line => {
+    const result = []; let cur = '', inQ = false;
+    for (let c of line) {
+      if (c === '"') { inQ = !inQ; }
+      else if (c === ',' && !inQ) { result.push(cur.trim()); cur = ''; }
+      else cur += c;
+    }
+    result.push(cur.trim());
+    return result;
+  });
+}
+
+function processImport(rows) {
+  if (rows.length < 2) { alert('檔案內容為空'); return; }
+  // header row: Day, Date, Weekday, Theme, Time, Emoji, Place, Activity, Note, Style, Address, Transport, Maps
+  const header = rows[0].map(h => String(h).trim().toLowerCase());
+  const col = (name) => header.findIndex(h => h.includes(name));
+  const cDay=col('day'), cDate=col('date'), cWeekday=col('weekday'), cTheme=col('theme');
+  const cTime=col('time'), cEmoji=col('emoji'), cPlace=col('place'), cActivity=col('activity');
+  const cNote=col('note'), cStyle=col('style'), cAddress=col('address');
+  const cTransport=col('transport'), cMaps=col('maps')||col('map');
+  if (cDay<0 || cPlace<0) { alert('找不到必要欄位（Day, Place）\n請先下載範本'); return; }
+
+  const choice = confirm('點「確定」= 新增到現有行程\n點「取消」= 取代全部行程');
+  const newDays = {};
+  rows.slice(1).forEach(row => {
+    if (!row[cPlace]) return;
+    const dayNum = parseInt(row[cDay]) || 1;
+    if (!newDays[dayNum]) newDays[dayNum] = {
+      day: dayNum,
+      date: cDate>=0 ? String(row[cDate]) : '',
+      weekday: cWeekday>=0 ? String(row[cWeekday]) : '',
+      theme: cTheme>=0 ? String(row[cTheme]) : `Day ${dayNum}`,
+      items: []
+    };
+    newDays[dayNum].items.push({
+      id: 'd' + dayNum + '-' + Date.now() + '-' + Math.random().toString(36).slice(2,6),
+      time: cTime>=0 ? String(row[cTime]) : '',
+      emoji: cEmoji>=0 ? String(row[cEmoji]) : '📍',
+      place: String(row[cPlace]),
+      activity: cActivity>=0 ? String(row[cActivity]) : '',
+      note: cNote>=0 ? String(row[cNote]) : '',
+      style: cStyle>=0 ? String(row[cStyle]) : '',
+      address: cAddress>=0 ? String(row[cAddress]) : '',
+      transport: cTransport>=0 ? String(row[cTransport]) : '',
+      maps: cMaps>=0 ? String(row[cMaps]) : '',
+      attachments: []
+    });
+  });
+
+  const importedDays = Object.values(newDays).sort((a,b)=>a.day-b.day);
+  if (choice) {
+    // append: shift day numbers
+    const offset = appState.days.length;
+    importedDays.forEach(d => { d.day += offset; d.items.forEach(i => i.id = 'd'+(d.day)+'-'+Date.now()); });
+    appState.days.push(...importedDays);
+  } else {
+    appState.days = importedDays;
+  }
+  saveState(); renderItinerary();
+  alert(`匯入完成！共 ${importedDays.length} 天、${importedDays.reduce((s,d)=>s+d.items.length,0)} 筆行程`);
+}
+
+function downloadTemplate() {
+  const header = 'Day,Date,Weekday,Theme,Time,Emoji,Place,Activity,Note,Style,Address,Transport,Maps';
+  const sample = '1,5/20,三,京都散策,09:00,⛩️,伏見稻荷大社,參拜・1.5h,早點去人少,highlight,京都府京都市伏見区深草薮之内町68,JR 稲荷站步行即達,https://maps.google.com/?q=伏見稲荷大社';
+  const csv = '\uFEFF' + header + '\n' + sample;
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }));
+  a.download = 'Tabi_行程範本.csv'; a.click();
+}
+
 // INIT
 function init(){
+  migrateTransportStyles();
+  applyColors();
+  renderHeader();
   renderItinerary();
   renderPeople();
-  setCurrency(appState.currency);
-  document.getElementById('rate-input').value=appState.rate;
+  renderCurrencyGrid();
   splitSelected=new Set(appState.people);
   renderSplitOptions();
   renderExpenses();
+  // 日期預設今天
+  const today=new Date().toISOString().split('T')[0];
+  const dateEl=document.getElementById('exp-date');
+  if(dateEl) dateEl.value=today;
 }
 init();
 </script>
