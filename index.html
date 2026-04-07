@@ -248,7 +248,7 @@
   .btn-google svg{flex-shrink:0;}
   /* USER CHIP */
   .user-chip{display:inline-flex;align-items:center;gap:8px;background:rgba(255,255,255,0.2);border-radius:20px;padding:4px 12px 4px 4px;cursor:pointer;}
-  #user-chip-wrap{position:absolute;top:12px;right:12px;display:flex;align-items:center;gap:6px;}
+  #user-chip-wrap{display:flex;align-items:center;}
   .user-avatar{width:28px;height:28px;border-radius:50%;object-fit:cover;border:2px solid rgba(255,255,255,0.5);}
   .user-name{font-size:0.82rem;color:white;font-weight:600;}
   /* PROFILE EDIT */
@@ -299,8 +299,9 @@
     </div>
   </div>
   <div id="trip-header-content"><!-- rendered by JS --></div>
-  <div id="user-chip-wrap">
+  <div style="position:absolute;top:12px;right:12px;display:flex;align-items:center;gap:6px;">
     <button class="header-edit-btn" onclick="openEditTripInfo()" style="position:static;">✏️ 編輯</button>
+    <div id="user-chip-wrap"></div>
   </div>
 </div>
 
