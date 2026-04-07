@@ -521,7 +521,6 @@ function renderUserChip() {
   if (!wrap || !currentUser) return;
   wrap.innerHTML = `<div class="user-chip" onclick="openEditProfile()">
     <img class="user-avatar" src="${currentUser.photoURL||'https://api.dicebear.com/7.x/thumbs/svg?seed='+currentUser.uid}" onerror="this.src='https://api.dicebear.com/7.x/thumbs/svg?seed=${currentUser.uid}'">
-    <span class="user-name">${currentUser.displayName}</span>
   </div>`;
 }
 
