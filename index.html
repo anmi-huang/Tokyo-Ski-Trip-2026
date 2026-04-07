@@ -300,7 +300,6 @@
   </div>
   <div id="trip-header-content"><!-- rendered by JS --></div>
   <div style="position:absolute;top:12px;right:12px;display:flex;align-items:center;gap:6px;">
-    <button class="header-edit-btn" onclick="openEditTripInfo()" style="position:static;">✏️ 編輯</button>
     <div id="user-chip-wrap"></div>
   </div>
 </div>
@@ -452,6 +451,7 @@
 <!-- NOTES -->
 <div class="page" id="page-notes">
   <div class="section" style="padding-top:12px">
+    <button onclick="openEditTripInfo()" style="width:100%;padding:12px;border-radius:12px;border:1.5px solid var(--pink);background:white;color:var(--pink);font-size:0.9rem;font-weight:700;cursor:pointer;margin-bottom:12px;">✏️ 編輯行程資訊</button>
     <div class="card">
       <div class="card-title">✈️ 行程資訊</div>
       <div class="card-body" style="font-size:0.9rem;line-height:1.8;">
@@ -1555,28 +1555,16 @@ async function init() {
   }
   migrateAppState();
 
-  if (shopSnap.val()) {
-    shopState = shopSnap.val();
+  const SHOP_VER = 3;
+  const fbShop = shopSnap.val();
+  if (fbShop && fbShop.version === SHOP_VER) {
+    // 版本符合，直接用 Firebase 資料
+    shopState = fbShop;
   } else {
+    // 版本不符或沒資料：用 JS 預設（含所有商品），寫回 Firebase
+    shopState.version = SHOP_VER;
     await db.ref('shopState').set(shopState);
   }
-  // 補入預設商品（用 id 判斷是否已存在，避免重複）
-  const allItems = (shopState.cats||[]).flatMap(c => c.items||[]);
-  const defaults = [
-    { cat:'s1', id:'si100', text:'Kose MQ Magnifique BB Cream 30g SPF30 PA+++ Floral Woody', note:'' },
-    { cat:'s1', id:'si101', text:'auxparadis 香水', note:'' },
-    { cat:'s1', id:'si102', text:'FUEGUIA 1833 Ginza', note:'銀座' },
-    { cat:'s6', id:'si601', text:'東京 arena 旗艦店', note:'' },
-    { cat:'s7', id:'si701', text:'國際桌球社 涉谷店', note:'' },
-  ];
-  let shopChanged = false;
-  defaults.forEach(d => {
-    if (!allItems.find(i => i.id === d.id)) {
-      const cat = shopState.cats.find(c => c.id === d.cat);
-      if (cat) { cat.items = cat.items||[]; cat.items.push({ id:d.id, text:d.text, note:d.note, checked:false }); shopChanged = true; }
-    }
-  });
-  if (shopChanged) await db.ref('shopState').set(shopState);
 
   // 示範消費記錄（若沒有資料才寫入）
   if (!appState.expenses || appState.expenses.length === 0) {
