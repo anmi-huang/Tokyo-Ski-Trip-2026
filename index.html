@@ -267,7 +267,15 @@
 <!-- LOGIN OVERLAY -->
 <div class="login-overlay" id="login-overlay">
   <div class="login-box">
-    <div class="login-logo">Tabi ✈️</div>
+    <div style="display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:4px;">
+      <svg width="40" height="40" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="18" cy="18" r="18" fill="url(#lg)"/>
+        <path d="M7 18L29 8L22 28L17.5 20L7 18Z" fill="white"/>
+        <line x1="17.5" y1="20" x2="29" y2="8" stroke="rgba(255,255,255,0.55)" stroke-width="1.5" stroke-linecap="round"/>
+        <defs><linearGradient id="lg" x1="0" y1="0" x2="36" y2="36" gradientUnits="userSpaceOnUse"><stop stop-color="#e8748a"/><stop offset="1" stop-color="#3a7bd5"/></linearGradient></defs>
+      </svg>
+      <div class="login-logo" style="font-size:2rem;margin:0;">Tabi</div>
+    </div>
     <div class="login-sub">TRAVEL PLANNER</div>
     <div class="login-trip">🇯🇵 東京 & 湯澤滑雪<br>2026 / 04 / 11 — 04 / 18</div>
     <button class="btn-google" onclick="signInWithGoogle()">
