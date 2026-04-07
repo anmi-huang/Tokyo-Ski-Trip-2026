@@ -1571,6 +1571,19 @@ async function init() {
     await db.ref('shopState').set(shopState);
   }
 
+  // 示範消費記錄（若沒有資料才寫入）
+  if (!appState.expenses || appState.expenses.length === 0) {
+    appState.people = ['Anmi', '阿明', '小美'];
+    appState.expenses = [
+      { id:1001, name:'新幹線指定席', amount:14000, cat:'交通', payer:'Anmi', note:'越後湯澤→上野', split:['Anmi','阿明','小美'], date:'2026-04-13' },
+      { id:1002, name:'Kagura 滑雪場票', amount:8500, cat:'活動', payer:'阿明', note:'含纜車', split:['Anmi','阿明','小美'], date:'2026-04-12' },
+      { id:1003, name:'牛かつ もと村', amount:3200, cat:'餐飲', payer:'小美', note:'炸牛排晚餐', split:['Anmi','阿明','小美'], date:'2026-04-13' },
+      { id:1004, name:'MEGA Don Quijote', amount:5600, cat:'購物', payer:'Anmi', note:'零食＋保養品', split:['Anmi','小美'], date:'2026-04-16' },
+      { id:1005, name:'teamLab Borderless', amount:3800, cat:'活動', payer:'阿明', note:'⚠️ 需預約', split:['Anmi','阿明','小美'], date:'2026-04-16' },
+    ];
+    await db.ref('appState').set(appState);
+  }
+
   renderAll();
 
   // Real-time listeners：其他人改動時自動更新
