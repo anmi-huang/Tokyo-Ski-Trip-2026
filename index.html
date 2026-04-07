@@ -497,6 +497,7 @@ firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
 const auth = firebase.auth();
 let _localSave = false;
+let _initComplete = false;
 let currentUser = null;
 
 // =================== AUTH ===================
@@ -1288,6 +1289,7 @@ function downloadAttachment(id, idx) {
 const SHOP_KEY = 'tabi_shop';
 let shopState = { cats: [
   { id:'s1', name:'💄 美妝保養', items:[
+    { id:'si100', text:'Kose MQ Magnifique BB Cream 30g SPF30 PA+++ Floral Woody', note:'', checked:false },
     { id:'si101', text:'auxparadis 香水', note:'', checked:false },
     { id:'si102', text:'FUEGUIA 1833 Ginza', note:'銀座', checked:false }
   ]},
@@ -1601,20 +1603,22 @@ async function init() {
 
   // Real-time listeners：其他人改動時自動更新
   db.ref('appState').on('value', snap => {
-    if (_localSave || !snap.val()) return;
+    if (!_initComplete || _localSave || !snap.val()) return;
     appState = snap.val();
     migrateAppState();
     renderAll();
   });
   db.ref('shopState').on('value', snap => {
-    if (_localSave || !snap.val()) return;
+    if (!_initComplete || _localSave || !snap.val()) return;
     shopState = snap.val();
     renderShop();
   });
 
+  _initComplete = true;
+
   // 手機切回前景時強制重新抓資料
   document.addEventListener('visibilitychange', () => {
-    if (document.visibilityState === 'visible') {
+    if (document.visibilityState === 'visible' && _initComplete) {
       db.ref('appState').once('value').then(snap => {
         if (!snap.val() || _localSave) return;
         appState = snap.val();
