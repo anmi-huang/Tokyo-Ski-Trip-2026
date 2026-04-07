@@ -504,7 +504,12 @@ auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL);
 
 function signInWithGoogle() {
   const provider = new firebase.auth.GoogleAuthProvider();
-  auth.signInWithPopup(provider).catch(e => alert('登入失敗：' + e.message));
+  const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+  if (isSafari) {
+    auth.signInWithRedirect(provider);
+  } else {
+    auth.signInWithPopup(provider).catch(() => auth.signInWithRedirect(provider));
+  }
 }
 function signOut() {
   if (!confirm('確定要登出嗎？')) return;
@@ -574,6 +579,8 @@ async function saveProfile() {
   renderUserChip();
   closeSheet();
 }
+
+auth.getRedirectResult().catch(() => {});
 
 auth.onAuthStateChanged(async user => {
   const overlay = document.getElementById('login-overlay');
