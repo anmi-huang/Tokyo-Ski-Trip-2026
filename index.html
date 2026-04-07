@@ -1557,23 +1557,25 @@ async function init() {
 
   if (shopSnap.val()) {
     shopState = shopSnap.val();
-    // 若所有分類都是空的，補入預設商品
-    const hasItems = shopState.cats && shopState.cats.some(c => c.items && c.items.length > 0);
-    if (!hasItems) {
-      shopState.cats = shopState.cats.map(c => {
-        if (c.id === 's1') c.items = [
-          { id:'si101', text:'auxparadis 香水', note:'', checked:false },
-          { id:'si102', text:'FUEGUIA 1833 Ginza', note:'銀座', checked:false }
-        ];
-        if (c.id === 's6') c.items = [{ id:'si601', text:'東京 arena 旗艦店', note:'', checked:false }];
-        if (c.id === 's7') c.items = [{ id:'si701', text:'國際桌球社 涉谷店', note:'', checked:false }];
-        return c;
-      });
-      await db.ref('shopState').set(shopState);
-    }
   } else {
     await db.ref('shopState').set(shopState);
   }
+  // 補入預設商品（用 id 判斷是否已存在，避免重複）
+  const allItems = (shopState.cats||[]).flatMap(c => c.items||[]);
+  const defaults = [
+    { cat:'s1', id:'si101', text:'auxparadis 香水', note:'' },
+    { cat:'s1', id:'si102', text:'FUEGUIA 1833 Ginza', note:'銀座' },
+    { cat:'s6', id:'si601', text:'東京 arena 旗艦店', note:'' },
+    { cat:'s7', id:'si701', text:'國際桌球社 涉谷店', note:'' },
+  ];
+  let shopChanged = false;
+  defaults.forEach(d => {
+    if (!allItems.find(i => i.id === d.id)) {
+      const cat = shopState.cats.find(c => c.id === d.cat);
+      if (cat) { cat.items = cat.items||[]; cat.items.push({ id:d.id, text:d.text, note:d.note, checked:false }); shopChanged = true; }
+    }
+  });
+  if (shopChanged) await db.ref('shopState').set(shopState);
 
   // 示範消費記錄（若沒有資料才寫入）
   if (!appState.expenses || appState.expenses.length === 0) {
