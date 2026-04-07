@@ -1563,6 +1563,7 @@ async function init() {
   // 補入預設商品（用 id 判斷是否已存在，避免重複）
   const allItems = (shopState.cats||[]).flatMap(c => c.items||[]);
   const defaults = [
+    { cat:'s1', id:'si100', text:'Kose MQ Magnifique BB Cream 30g SPF30 PA+++ Floral Woody', note:'' },
     { cat:'s1', id:'si101', text:'auxparadis 香水', note:'' },
     { cat:'s1', id:'si102', text:'FUEGUIA 1833 Ginza', note:'銀座' },
     { cat:'s6', id:'si601', text:'東京 arena 旗艦店', note:'' },
