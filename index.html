@@ -1565,26 +1565,30 @@ async function init() {
   }
   migrateAppState();
 
-  // 載入 Firebase 資料（若有）
-  if (shopSnap.val()) shopState = shopSnap.val();
-
-  // 確保預設商品存在（用 ID 判斷，缺什麼補什麼，不覆蓋使用者資料）
-  const _defaults = [
-    { cat:'s1', id:'si100', text:'Kose MQ Magnifique BB Cream 30g SPF30 PA+++ Floral Woody', note:'' },
-    { cat:'s1', id:'si101', text:'auxparadis 香水', note:'' },
-    { cat:'s1', id:'si102', text:'FUEGUIA 1833 Ginza', note:'銀座' },
-    { cat:'s6', id:'si601', text:'東京 arena 旗艦店', note:'' },
-    { cat:'s7', id:'si701', text:'國際桌球社 涉谷店', note:'' },
-  ];
-  const _allIds = (shopState.cats||[]).flatMap(c => (c.items||[]).map(i => i.id));
-  let _shopChanged = false;
-  _defaults.forEach(d => {
-    if (!_allIds.includes(d.id)) {
-      const cat = (shopState.cats||[]).find(c => c.id === d.cat);
-      if (cat) { cat.items = cat.items||[]; cat.items.push({ id:d.id, text:d.text, note:d.note, checked:false }); _shopChanged = true; }
-    }
+  // JS 是商品來源，Firebase 只存打勾狀態和使用者新增的商品
+  // 先建立 Firebase 裡的打勾狀態 map：{itemId: checked}
+  const _fbChecked = {};
+  const _fbExtraItems = {}; // 使用者自己新增的商品（不在 JS 預設裡）
+  const _fbShop = shopSnap.val();
+  if (_fbShop && Array.isArray(_fbShop.cats)) {
+    _fbShop.cats.forEach(cat => {
+      (cat.items||[]).forEach(item => {
+        _fbChecked[item.id] = !!item.checked;
+        if (!_fbExtraItems[cat.id]) _fbExtraItems[cat.id] = [];
+        _fbExtraItems[cat.id].push(item);
+      });
+    });
+  }
+  // 套用打勾狀態到 JS 預設商品
+  shopState.cats.forEach(cat => {
+    cat.items.forEach(item => { item.checked = _fbChecked[item.id] || false; });
+    // 加入使用者自己新增的商品（ID 不在 JS 預設裡的）
+    const jsIds = cat.items.map(i => i.id);
+    (_fbExtraItems[cat.id]||[]).forEach(extra => {
+      if (!jsIds.includes(extra.id)) cat.items.push(extra);
+    });
   });
-  if (_shopChanged || !shopSnap.val()) await db.ref('shopState').set(shopState);
+  await db.ref('shopState').set(shopState);
 
   // 示範消費記錄（若沒有資料才寫入）
   if (!appState.expenses || appState.expenses.length === 0) {
@@ -1610,7 +1614,23 @@ async function init() {
   });
   db.ref('shopState').on('value', snap => {
     if (!_initComplete || _localSave || !snap.val()) return;
-    shopState = snap.val();
+    // 只同步打勾狀態和使用者新增商品，不覆蓋 JS 預設結構
+    const _remote = snap.val();
+    if (_remote && Array.isArray(_remote.cats)) {
+      const _remoteChecked = {};
+      const _remoteExtra = {};
+      _remote.cats.forEach(cat => {
+        (cat.items||[]).forEach(item => { _remoteChecked[item.id] = !!item.checked; });
+        const jsIds = (shopState.cats.find(c=>c.id===cat.id)||{items:[]}).items.map(i=>i.id);
+        _remoteExtra[cat.id] = (cat.items||[]).filter(i => !jsIds.includes(i.id));
+      });
+      shopState.cats.forEach(cat => {
+        cat.items.forEach(item => { item.checked = _remoteChecked[item.id] || false; });
+        (_remoteExtra[cat.id]||[]).forEach(extra => {
+          if (!cat.items.find(i=>i.id===extra.id)) cat.items.push(extra);
+        });
+      });
+    }
     renderShop();
   });
 
