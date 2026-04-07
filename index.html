@@ -500,6 +500,8 @@ let _localSave = false;
 let currentUser = null;
 
 // =================== AUTH ===================
+auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL);
+
 function signInWithGoogle() {
   const provider = new firebase.auth.GoogleAuthProvider();
   auth.signInWithPopup(provider).catch(e => alert('登入失敗：' + e.message));
