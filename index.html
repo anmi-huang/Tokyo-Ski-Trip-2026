@@ -307,9 +307,9 @@
 
 <div class="tabs">
   <div class="tab active" onclick="switchTab('itinerary')">📅 行程</div>
+  <div class="tab" onclick="switchTab('shop')">🛒 購物</div>
   <div class="tab" onclick="switchTab('expense')">💴 記帳</div>
   <div class="tab" onclick="switchTab('stats')">📊 統計</div>
-  <div class="tab" onclick="switchTab('shop')">🛒 購物</div>
   <div class="tab" onclick="switchTab('notes')">📋 備註</div>
 </div>
 
@@ -901,7 +901,7 @@ function escHtml(s) { return (s||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;'
 
 // =================== TABS ===================
 function switchTab(name) {
-  document.querySelectorAll('.tab').forEach((t,i) => t.classList.toggle('active',['itinerary','expense','stats','shop','notes'][i]===name));
+  document.querySelectorAll('.tab').forEach((t,i) => t.classList.toggle('active',['itinerary','shop','expense','stats','notes'][i]===name));
   document.querySelectorAll('.page').forEach(p => p.classList.toggle('active',p.id==='page-'+name));
   if(name==='stats') renderStats();
   if(name==='shop') renderShop();
