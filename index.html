@@ -5,6 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>Tabi — 旅行計劃</title>
 <script src="https://unpkg.com/xlsx/dist/xlsx.full.min.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
 <style>
   :root {
     --pink:#e8748a; --pink-light:#fde8ec;
@@ -449,6 +451,17 @@ git push</pre>
 </div>
 
 <script>
+// =================== FIREBASE INIT ===================
+const firebaseConfig = {
+  apiKey: "AIzaSyBSrds2VXZqilWrsFkJtKJSlAyTd_GABy0",
+  databaseURL: "https://tokyo-ski-trip-2fb13-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "tokyo-ski-trip-2fb13",
+  appId: "1:97206375953:web:2e38375158d91d5dd543b0"
+};
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
+let _localSave = false;
+
 // =================== ITINERARY DATA ===================
 const DEFAULT_DAYS = [
   { day:1, date:'4/11', weekday:'六', theme:'出發！飛往日本', items:[
@@ -533,19 +546,23 @@ const DEFAULT_TRIP_INFO = {
   subtitle:'2026 / 04 / 11 (六) — 04 / 18 (六)',
   badges:['✈️ CX450/451','🎿 Kagura','♨️ KKR 湯澤雪國','🏨 相鐵 FRESA INN']
 };
-let appState = JSON.parse(localStorage.getItem('trip_state_v2') || 'null') || {
+let appState = {
   days: JSON.parse(JSON.stringify(DEFAULT_DAYS)),
   people: ['小明','小美'], currency:'JPY', rate:4.5, expenses:[],
   tripCurrency:'JPY', inputInHome:false,
   tripInfo: {...DEFAULT_TRIP_INFO}
 };
-// migrations
-if (!appState.days) appState.days = JSON.parse(JSON.stringify(DEFAULT_DAYS));
-if (!appState.tripCurrency) appState.tripCurrency = (appState.currency==='TWD')?'JPY':appState.currency||'JPY';
-if (appState.inputInHome===undefined) appState.inputInHome = (appState.currency==='TWD');
-if (!appState.tripInfo) appState.tripInfo = {...DEFAULT_TRIP_INFO};
+function migrateAppState() {
+  if (!appState.days) appState.days = JSON.parse(JSON.stringify(DEFAULT_DAYS));
+  if (!appState.tripCurrency) appState.tripCurrency = (appState.currency==='TWD')?'JPY':appState.currency||'JPY';
+  if (appState.inputInHome===undefined) appState.inputInHome = (appState.currency==='TWD');
+  if (!appState.tripInfo) appState.tripInfo = {...DEFAULT_TRIP_INFO};
+}
 
-function saveState() { localStorage.setItem('trip_state_v2', JSON.stringify(appState)); }
+function saveState() {
+  _localSave = true;
+  db.ref('appState').set(appState).then(() => { setTimeout(()=>{ _localSave=false; }, 1000); });
+}
 
 // =================== RENDER ITINERARY ===================
 function renderItinerary() {
@@ -1124,7 +1141,7 @@ function downloadAttachment(id, idx) {
 
 // =================== SHOPPING LIST ===================
 const SHOP_KEY = 'tabi_shop';
-let shopState = JSON.parse(localStorage.getItem(SHOP_KEY) || 'null') || { cats: [
+let shopState = { cats: [
   { id:'s1', name:'💄 美妝保養', items:[
     { id:'si101', text:'auxparadis 香水', note:'', checked:false },
     { id:'si102', text:'FUEGUIA 1833 Ginza', note:'銀座', checked:false }
@@ -1141,7 +1158,10 @@ let shopState = JSON.parse(localStorage.getItem(SHOP_KEY) || 'null') || { cats: 
   ]}
 ]};
 
-function saveShop(){ localStorage.setItem(SHOP_KEY, JSON.stringify(shopState)); }
+function saveShop(){
+  _localSave = true;
+  db.ref('shopState').set(shopState).then(() => { setTimeout(()=>{ _localSave=false; }, 1000); });
+}
 
 function renderShop(){
   const root = document.getElementById('shop-root');
@@ -1366,20 +1386,58 @@ function downloadTemplate() {
 }
 
 // INIT
-function init(){
+function renderAll() {
   migrateTransportStyles();
   applyColors();
   renderHeader();
   renderItinerary();
   renderPeople();
   renderCurrencyGrid();
-  splitSelected=new Set(appState.people);
+  splitSelected = new Set(appState.people);
   renderSplitOptions();
   renderExpenses();
-  // 日期預設今天
-  const today=new Date().toISOString().split('T')[0];
-  const dateEl=document.getElementById('exp-date');
-  if(dateEl) dateEl.value=today;
+  const today = new Date().toISOString().split('T')[0];
+  const dateEl = document.getElementById('exp-date');
+  if (dateEl) dateEl.value = today;
+}
+
+async function init() {
+  document.getElementById('itinerary-root').innerHTML = '<div style="text-align:center;padding:60px 0;color:#aaa;font-size:0.9rem">載入中…</div>';
+
+  // 從 Firebase 讀取初始資料
+  const [appSnap, shopSnap] = await Promise.all([
+    db.ref('appState').once('value'),
+    db.ref('shopState').once('value')
+  ]);
+
+  if (appSnap.val()) {
+    appState = appSnap.val();
+  } else {
+    // 第一次使用，把預設資料寫入 Firebase
+    await db.ref('appState').set(appState);
+  }
+  migrateAppState();
+
+  if (shopSnap.val()) {
+    shopState = shopSnap.val();
+  } else {
+    await db.ref('shopState').set(shopState);
+  }
+
+  renderAll();
+
+  // Real-time listeners：其他人改動時自動更新
+  db.ref('appState').on('value', snap => {
+    if (_localSave || !snap.val()) return;
+    appState = snap.val();
+    migrateAppState();
+    renderAll();
+  });
+  db.ref('shopState').on('value', snap => {
+    if (_localSave || !snap.val()) return;
+    shopState = snap.val();
+    renderShop();
+  });
 }
 init();
 </script>
