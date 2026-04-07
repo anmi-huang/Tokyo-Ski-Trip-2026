@@ -1595,6 +1595,23 @@ async function init() {
     shopState = snap.val();
     renderShop();
   });
+
+  // 手機切回前景時強制重新抓資料
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible') {
+      db.ref('appState').once('value').then(snap => {
+        if (!snap.val() || _localSave) return;
+        appState = snap.val();
+        migrateAppState();
+        renderAll();
+      });
+      db.ref('shopState').once('value').then(snap => {
+        if (!snap.val() || _localSave) return;
+        shopState = snap.val();
+        renderShop();
+      });
+    }
+  });
 }
 init();
 </script>
