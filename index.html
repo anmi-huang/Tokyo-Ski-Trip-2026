@@ -153,7 +153,14 @@
   .header{position:relative;}
 
   /* CURRENCY GRID */
-  .curr-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:10px;}
+  .curr-compact-row{display:flex;align-items:center;gap:10px;}
+  .curr-selected{display:flex;align-items:center;gap:8px;flex:1;}
+  .curr-selected-flag{font-size:1.5rem;}
+  .curr-selected-info{line-height:1.3;}
+  .curr-selected-code{font-weight:700;font-size:1rem;}
+  .curr-selected-name{font-size:0.75rem;color:var(--gray);}
+  .curr-change-btn{padding:6px 12px;border-radius:8px;border:1.5px solid var(--border);background:white;font-size:0.8rem;font-weight:600;cursor:pointer;color:var(--dark);white-space:nowrap;}
+  .curr-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;}
   .curr-cell{padding:7px 4px;border-radius:8px;border:1.5px solid var(--border);background:white;font-size:0.72rem;font-weight:600;cursor:pointer;text-align:center;line-height:1.4;}
   .curr-cell.active{background:var(--dark);color:white;border-color:var(--dark);}
   .curr-cell .curr-flag{font-size:1rem;display:block;}
@@ -202,6 +209,30 @@
   .itinerary-actions .btn-import{border-color:var(--blue);color:var(--blue);}
   .day-edit-btn{background:rgba(255,255,255,0.15);border:none;color:white;border-radius:6px;padding:2px 7px;font-size:0.75rem;cursor:pointer;margin-left:2px;}
 
+  /* SHOPPING LIST */
+  .shop-cat{margin:12px 12px 0;}
+  .shop-cat-header{display:flex;align-items:center;justify-content:space-between;background:var(--dark);color:white;padding:10px 14px;border-radius:var(--radius) var(--radius) 0 0;font-weight:700;font-size:0.9rem;}
+  .shop-cat-body{background:white;border-radius:0 0 var(--radius) var(--radius);margin-bottom:8px;overflow:hidden;}
+  .shop-item{display:flex;align-items:center;gap:12px;padding:11px 14px;border-bottom:1px solid #f0f0f0;}
+  .shop-item:last-child{border-bottom:none;}
+  .shop-checkbox{width:22px;height:22px;border-radius:6px;border:2px solid var(--border);cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all 0.15s;}
+  .shop-checkbox.checked{background:var(--green);border-color:var(--green);}
+  .shop-checkbox.checked::after{content:'✓';color:white;font-size:0.85rem;font-weight:700;}
+  .shop-item-text{flex:1;font-size:0.9rem;}
+  .shop-item-text.done{text-decoration:line-through;color:var(--gray);}
+  .shop-item-note{font-size:0.75rem;color:var(--gray);margin-top:2px;}
+  .shop-item-del{background:none;border:none;color:#ccc;font-size:1.1rem;cursor:pointer;padding:2px 6px;}
+  .shop-item-del:active{color:var(--red);}
+  .shop-add-row{display:flex;gap:8px;padding:10px 14px;border-top:1px dashed var(--border);}
+  .shop-add-input{flex:1;border:1.5px solid var(--border);border-radius:8px;padding:7px 10px;font-size:0.88rem;outline:none;font-family:inherit;}
+  .shop-add-input:focus{border-color:var(--pink);}
+  .shop-add-btn{background:var(--pink);border:none;color:white;border-radius:8px;padding:7px 14px;font-size:0.88rem;font-weight:700;cursor:pointer;}
+  .shop-progress{font-size:0.72rem;opacity:0.65;font-weight:400;}
+  .shop-actions{display:flex;gap:8px;padding:12px 12px 0;}
+  .shop-actions button{flex:1;padding:10px;border-radius:10px;border:1.5px solid var(--border);background:white;font-size:0.85rem;font-weight:600;cursor:pointer;color:var(--dark);}
+  .shop-actions .btn-add-cat{border-color:var(--pink);color:var(--pink);}
+  .shop-actions .btn-clear-done{border-color:var(--gray);color:var(--gray);}
+
   /* LIGHTBOX */
   .lightbox{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.88);z-index:300;align-items:center;justify-content:center;}
   .lightbox.show{display:flex;}
@@ -231,6 +262,8 @@
   <div class="tab active" onclick="switchTab('itinerary')">📅 行程</div>
   <div class="tab" onclick="switchTab('expense')">💴 記帳</div>
   <div class="tab" onclick="switchTab('stats')">📊 統計</div>
+  <div class="tab" onclick="switchTab('shop')">🛒 購物</div>
+  <div class="tab" onclick="switchTab('notes')">📋 備註</div>
 </div>
 
 <div class="page active" id="page-itinerary">
@@ -274,17 +307,19 @@
     <div class="card">
       <div class="card-title">💱 匯率設定</div>
       <div class="card-body">
-        <div style="font-size:0.75rem;color:var(--gray);font-weight:600;margin-bottom:6px">旅遊地貨幣</div>
-        <div class="curr-grid" id="currency-grid"><!-- rendered by JS --></div>
-        <div style="font-size:0.75rem;color:var(--gray);font-weight:600;margin-bottom:6px">輸入金額單位</div>
-        <div class="input-mode-row">
-          <button id="mode-local" onclick="setInputMode(false)">用當地幣輸入</button>
-          <button id="mode-home" onclick="setInputMode(true)">用台幣 TWD 輸入</button>
+        <div class="curr-compact-row">
+          <div class="curr-selected" id="curr-selected-display"><!-- rendered by JS --></div>
+          <button class="curr-change-btn" onclick="toggleCurrGrid()">更換貨幣 ▾</button>
         </div>
-        <div class="rate-row">
+        <div class="curr-grid" id="currency-grid" style="display:none;margin-top:10px"><!-- rendered by JS --></div>
+        <div class="rate-row" style="margin-top:10px">
           <span>1 TWD =</span>
           <input type="number" id="rate-input" value="4.5" step="0.01" onchange="saveRate()">
           <span id="rate-curr-label">JPY</span>
+        </div>
+        <div class="input-mode-row" style="margin-top:8px">
+          <button id="mode-local" onclick="setInputMode(false)">當地幣輸入</button>
+          <button id="mode-home" onclick="setInputMode(true)">台幣 TWD 輸入</button>
         </div>
       </div>
     </div>
@@ -358,6 +393,48 @@
   </div>
 </div>
 
+<!-- SHOPPING -->
+<div class="page" id="page-shop">
+  <div class="shop-actions">
+    <button class="btn-add-cat" onclick="openAddShopCat()">＋ 新增分類</button>
+    <button class="btn-clear-done" onclick="clearDoneItems()">🗑️ 清除已買</button>
+  </div>
+  <div id="shop-root"></div>
+</div>
+
+<!-- NOTES -->
+<div class="page" id="page-notes">
+  <div class="section" style="padding-top:12px">
+    <div class="card">
+      <div class="card-title">✈️ 行程資訊</div>
+      <div class="card-body" style="font-size:0.9rem;line-height:1.8;">
+        <div><strong>日期：</strong>2026/04/11 (六) — 04/18 (六)</div>
+        <div><strong>地點：</strong>越後湯澤（Kagura 滑雪場）+ 東京</div>
+        <div><strong>住宿：</strong>KKR 湯澤雪國溫泉飯店 / 相鐵 FRESA INN 上野御徒町</div>
+        <div><strong>航班：</strong>去 CX450 ／ 回 CX451（座位 56J）</div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">🔗 網站連結</div>
+      <div class="card-body" style="font-size:0.9rem;line-height:2;">
+        <div>📱 <strong>行程表網址：</strong><a href="https://anmi-huang.github.io/Tokyo-Ski-Trip-2026/" target="_blank" style="color:var(--pink)">anmi-huang.github.io/Tokyo-Ski-Trip-2026</a></div>
+        <div>💾 <strong>GitHub Repo：</strong><a href="https://github.com/anmi-huang/Tokyo-Ski-Trip-2026" target="_blank" style="color:var(--pink)">github.com/anmi-huang/Tokyo-Ski-Trip-2026</a></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">🔄 更新網站方式</div>
+      <div class="card-body" style="font-size:0.85rem;line-height:1.7;">
+        <div style="margin-bottom:8px">修改 <code style="background:rgba(0,0,0,0.1);padding:2px 6px;border-radius:4px">index.html</code> 後，在終端機執行：</div>
+        <pre style="background:rgba(0,0,0,0.08);border-radius:8px;padding:12px;font-size:0.8rem;overflow-x:auto;margin:0">cd "/Users/anmi/Desktop/claude_project/Tokyo Ski Trip"
+git add index.html
+git commit -m "更新行程"
+git push</pre>
+        <div style="margin-top:8px;opacity:0.7;font-size:0.8rem">等約 1 分鐘，網站自動更新。</div>
+      </div>
+    </div>
+  </div>
+</div>
+
 <button class="fab-color" onclick="openColorSettings()" title="顏色設定">🎨</button>
 
 <!-- SHEET OVERLAY -->
@@ -382,14 +459,14 @@ const DEFAULT_DAYS = [
     { id:'d1-5', time:'21:00', emoji:'♨️', place:'KKR 湯澤雪國溫泉飯店', activity:'Check-in / 溫泉', note:'有溫泉！附近有 7-11', address:'〒949-6101 新潟県南魚沼郡湯沢町湯沢2427-1', transport:'越後湯澤站東口出站，步行約 8 分鐘。', maps:'https://maps.google.com/?q=KKR湯沢ゆきぐに+新潟県南魚沼郡湯沢町湯沢2427-1', style:'highlight' }
   ]},
   { day:2, date:'4/12', weekday:'日', theme:'🎿 Kagura 滑雪 Day 1', items:[
-    { id:'d2-1', time:'09:00', emoji:'🚌', place:'飯店 → Kagura', activity:'接駁巴士', note:'需確認接駁時間', address:'KKR 湯澤雪國溫泉飯店 大廳集合', transport:'飯店大廳集合，搭接駁巴士，車程約 35 分。', maps:'https://maps.google.com/?q=KKR湯沢ゆきぐに', style:'flight' },
-    { id:'d2-2', time:'09:30', emoji:'⛷️', place:'Kagura Ski Resort', activity:'滑雪整天・5.5h', note:'高海拔雪質好，含午餐', address:'〒949-6212 新潟県南魚沼郡湯沢町三俣686', transport:'接駁巴士直達，車程約 35 分。', maps:'https://maps.google.com/?q=かぐらスキー場+新潟県南魚沼郡湯沢町三俣686', style:'highlight' },
+    { id:'d2-1', time:'08:15', emoji:'🚌', place:'飯店 → Kagura', activity:'接駁巴士', note:'08:15 出發，09:00 到達滑雪場', address:'KKR 湯澤雪國溫泉飯店 大廳集合', transport:'飯店大廳集合，搭接駁巴士，車程約 35-45 分。', maps:'https://maps.google.com/?q=KKR湯沢ゆきぐに', style:'flight' },
+    { id:'d2-2', time:'09:00', emoji:'⛷️', place:'Kagura Ski Resort', activity:'滑雪整天・6h', note:'高海拔雪質好，含午餐', address:'〒949-6212 新潟県南魚沼郡湯沢町三俣686', transport:'接駁巴士直達，車程約 35 分。', maps:'https://maps.google.com/?q=かぐらスキー場+新潟県南魚沼郡湯沢町三俣686', style:'highlight' },
     { id:'d2-3', time:'15:00', emoji:'🚌', place:'Kagura → 湯澤（返回）', activity:'接駁巴士', note:'回飯店泡溫泉', address:'Kagura Ski Resort 巴士站', transport:'搭接駁巴士返回，車程約 35 分。', maps:'https://maps.google.com/?q=かぐらスキー場', style:'flight' },
     { id:'d2-4', time:'18:00', emoji:'🍜', place:'湯澤市區晚餐', activity:'溫泉料理 / 蕎麥麵', note:'', address:'新潟県南魚沼郡湯沢町（越後湯沢駅周辺）', transport:'越後湯澤站步行範圍內餐廳。', maps:'https://maps.google.com/?q=越後湯沢駅+周辺+レストラン', style:'' }
   ]},
   { day:3, date:'4/13', weekday:'一', theme:'🎿 Kagura Day 2 → 移動東京', items:[
-    { id:'d3-1', time:'09:00', emoji:'🚌', place:'飯店 → Kagura（退房寄行李）', activity:'接駁巴士・35 分', note:'退房行李寄放', address:'KKR 湯澤雪國溫泉飯店 大廳', transport:'退房後寄放行李，搭接駁巴士至 Kagura。', maps:'https://maps.google.com/?q=KKR湯沢ゆきぐに', style:'flight' },
-    { id:'d3-2', time:'09:30', emoji:'⛷️', place:'Kagura Ski Resort', activity:'滑雪整天・5.5h', note:'含午餐', address:'〒949-6212 新潟県南魚沼郡湯沢町三俣686', transport:'接駁巴士直達。', maps:'https://maps.google.com/?q=かぐらスキー場', style:'highlight' },
+    { id:'d3-1', time:'08:15', emoji:'🚌', place:'飯店 → Kagura（退房寄行李）', activity:'接駁巴士・35-45 分', note:'退房行李寄放，08:15 出發', address:'KKR 湯澤雪國溫泉飯店 大廳', transport:'退房後寄放行李，搭接駁巴士至 Kagura，車程約 35-45 分。', maps:'https://maps.google.com/?q=KKR湯沢ゆきぐに', style:'flight' },
+    { id:'d3-2', time:'09:00', emoji:'⛷️', place:'Kagura Ski Resort', activity:'滑雪整天・6h', note:'含午餐', address:'〒949-6212 新潟県南魚沼郡湯沢町三俣686', transport:'接駁巴士直達。', maps:'https://maps.google.com/?q=かぐらスキー場', style:'highlight' },
     { id:'d3-3', time:'15:00', emoji:'🚌', place:'Kagura → 越後湯澤站（取行李）', activity:'巴士・35 分', note:'準備移動東京', address:'Kagura Ski Resort 巴士站', transport:'搭接駁巴士返回，取寄放的行李。', maps:'https://maps.google.com/?q=かぐらスキー場', style:'flight' },
     { id:'d3-4', time:'15:30', emoji:'🚄', place:'湯澤 → 上野', activity:'上越新幹線・1h20', note:'指定席建議預約', address:'越後湯沢駅 新幹線月台', transport:'搭「たにがわ」或「とき」，在上野駅下車。', maps:'https://maps.google.com/?q=越後湯沢駅', style:'flight' },
     { id:'d3-5', time:'17:00', emoji:'🏨', place:'相鐵 FRESA INN 上野御徒町', activity:'Check-in', note:'全家便利商店在樓下', address:'〒110-0005 東京都台東区上野5-2-4', transport:'上野駅「不忍口」步行約 3-5 分。', maps:'https://maps.google.com/?q=相鉄フレッサイン東京上野御徒町+東京都台東区上野5-2-4', style:'' },
@@ -398,8 +475,8 @@ const DEFAULT_DAYS = [
   ]},
   { day:4, date:'4/14', weekday:'二', theme:'法輪寺・新宿・SOMPO', items:[
     { id:'d4-1', time:'09:30', emoji:'⛩️', place:'法輪寺（早稻田）', activity:'花手水參觀・45 分', note:'超美花手水，必拍！', address:'〒162-0051 東京都新宿区西早稲田1-1-15', transport:'御徒町站搭銀座線→末廣町，再轉東西線至早稲田站，步行約 5 分。共約 40 分。', maps:'https://maps.google.com/?q=法輪寺+東京都新宿区西早稲田1-1-15', style:'' },
-    { id:'d4-2', time:'11:50', emoji:'📖', place:'東京堂書店', activity:'設計文具・1h', note:'週末公休注意', address:'〒101-0051 東京都千代田区神田神保町1-17', transport:'早稻田站搭東西線至九段下，步行約 10 分。注意：週末公休。', maps:'https://maps.google.com/?q=東京堂書店+東京都千代田区神田神保町1-17', style:'' },
-    { id:'d4-3', time:'13:30', emoji:'🛍️', place:'新宿（Alpen / atmos / Kiddyland）', activity:'購物・2h', note:'', address:'東京都新宿区西新宿（新宿駅周辺）', transport:'九段下站搭丸之內線至新宿站，約 10 分。西口出站即達。', maps:'https://maps.google.com/?q=新宿駅西口', style:'' },
+    { id:'d4-2', time:'11:50', emoji:'🌸', place:'東京堂書店（花材）', activity:'花材・1h', note:'週末公休注意', address:'〒160-0008 東京都新宿区四谷三栄町12-13', transport:'早稻田站搭東西線至四ツ谷站，步行約 5 分。注意：週末公休。', maps:'https://maps.google.com/?q=12-13+Yotsuya+Saneicho,+Shinjuku+City,+Tokyo+160-0008', style:'' },
+    { id:'d4-3', time:'13:30', emoji:'🛍️', place:'新宿（Alpen / atmos / Kiddyland）', activity:'購物・2h', note:'', address:'東京都新宿区西新宿（新宿駅周辺）', transport:'四ツ谷站搭 JR 中央線至新宿站，約 5 分。西口出站即達。', maps:'https://maps.google.com/?q=新宿駅西口', style:'' },
     { id:'d4-4', time:'15:30', emoji:'🎨', place:'SOMPO 美術館', activity:'梵谷《向日葵》真跡・1h', note:'', address:'〒160-8338 東京都新宿区西新宿1-26-1', transport:'新宿站西口步行約 5 分，損保ジャパン本社ビル 42F。', maps:'https://maps.google.com/?q=SOMPO美術館+東京都新宿区西新宿1-26-1', style:'highlight' },
     { id:'d4-5', time:'16:45', emoji:'📷', place:'北村相機店', activity:'攝影器材・45 分', note:'二手相機齊全', address:'〒160-0023 東京都新宿区西新宿1-18-2', transport:'SOMPO 美術館步行約 3 分。', maps:'https://maps.google.com/?q=キタムラ+新宿西口店+東京都新宿区西新宿1-18-2', style:'' },
     { id:'d4-6', time:'17:30', emoji:'🥓', place:'叙々苑 新宿エルタワー店', activity:'晚餐・2h', note:'⚠️ 需提前 1 個月預約', address:'〒163-0536 東京都新宿区西新宿1-6-1 新宿エルタワー36F', transport:'新宿站西口步行約 8 分，新宿 El Torre 36 樓。', maps:'https://maps.google.com/?q=叙々苑+新宿エルタワー店', style:'' }
@@ -408,21 +485,21 @@ const DEFAULT_DAYS = [
     { id:'d5-1', time:'08:00', emoji:'🗻', place:'富士山五合目 一日遊', activity:'全天・11h', note:'帶防風外套，山上涼', address:'静岡県富士宮市富士山（富士山五合目）', transport:'新宿站搭高速巴士「富士急ハイランド」方向，或報名一日遊。山上氣溫約 0-5°C。', maps:'https://maps.google.com/?q=富士山五合目', style:'highlight' },
     { id:'d5-2', time:'19:30', emoji:'🍳', place:'EGG BABY CAFE', activity:'蛋料理晚餐・1.5h', note:'蛋料理極有名', address:'東京都渋谷区神南1-19-3（澀谷附近）', transport:'從回程地搭 JR 至澀谷站，步行約 5-10 分。', maps:'https://maps.google.com/?q=EGG+BABY+CAFE+渋谷', style:'' }
   ]},
-  { day:6, date:'4/16', weekday:'四', theme:'神社・teamLab・SHIBUYA SKY', items:[
+  { day:6, date:'4/16', weekday:'四', theme:'神社・teamLab・澀谷', items:[
     { id:'d6-1', time:'09:00', emoji:'⛩️', place:'小網神社', activity:'強運洗錢・45 分', note:'早點去避人潮', address:'〒103-0016 東京都中央区日本橋小網町16-23', transport:'飯店搭 JR 至秋葉原，換日比谷線至人形町站，步行約 5 分。共約 15 分。', maps:'https://maps.google.com/?q=小網神社+東京都中央区日本橋小網町16-23', style:'' },
     { id:'d6-2', time:'10:00', emoji:'🍕', place:'麻布台之丘・Pizza 4P\'s', activity:'午餐・1.5h', note:'炸豬排河村也在附近', address:'〒106-0031 東京都港区西麻布1-2-7（Pizza 4P\'s 西麻布）', transport:'人形町站搭日比谷線至神谷町站，步行約 10 分至麻布台ヒルズ。', maps:"https://maps.google.com/?q=Pizza+4Ps+西麻布", style:'' },
     { id:'d6-3', time:'11:30', emoji:'🌊', place:'teamLab Borderless 麻布台之丘', activity:'數位藝術館・2h', note:'⚠️ 需預約指定場次', address:'〒106-0031 東京都港区虎ノ門5-9-1 麻布台ヒルズ B2-4F', transport:'神谷町站 1 號出口步行約 5 分，麻布台ヒルズ地下層。', maps:'https://maps.google.com/?q=チームラボボーダレス+麻布台ヒルズ', style:'highlight' },
-    { id:'d6-4', time:'14:00', emoji:'🌇', place:'SHIBUYA SKY', activity:'展望台・1.5h', note:'預約日落前 1 小時入場', address:'〒150-6145 東京都渋谷区渋谷2-24-12 渋谷スクランブルスクエア 46F', transport:'神谷町站搭日比谷線至澀谷站，連通渋谷スクランブルスクエア 14F 售票。', maps:'https://maps.google.com/?q=SHIBUYA+SKY+渋谷スクランブルスクエア', style:'highlight' },
-    { id:'d6-5', time:'15:45', emoji:'🍜', place:'山下本気うどん 道玄坂店', activity:'烏龍麵・1h', note:'白色明太子奶油烏龍麵', address:'〒150-0043 東京都渋谷区道玄坂2-25-6', transport:'澀谷站步行約 5 分，沿道玄坂上行。', maps:'https://maps.google.com/?q=山下本気うどん+渋谷道玄坂店', style:'' },
-    { id:'d6-6', time:'16:45', emoji:'🛒', place:'MEGA ドン・キホーテ 渋谷本店', activity:'購物・1.5h', note:'零食 / 電器 / 美妝', address:'〒150-0043 東京都渋谷区道玄坂1-16-5', transport:'澀谷站步行約 5 分。', maps:'https://maps.google.com/?q=MEGAドン・キホーテ渋谷本店', style:'' }
+    { id:'d6-5', time:'14:00', emoji:'🍜', place:'山下本気うどん 道玄坂店', activity:'烏龍麵・1h', note:'白色明太子奶油烏龍麵', address:'〒150-0043 東京都渋谷区道玄坂2-25-6', transport:'神谷町站搭日比谷線至澀谷站，步行約 5 分，沿道玄坂上行。', maps:'https://maps.google.com/?q=山下本気うどん+渋谷道玄坂店', style:'' },
+    { id:'d6-6', time:'15:00', emoji:'🛒', place:'MEGA ドン・キホーテ 渋谷本店', activity:'購物・2h', note:'零食 / 電器 / 美妝', address:'〒150-0043 東京都渋谷区道玄坂1-16-5', transport:'澀谷站步行約 5 分。', maps:'https://maps.google.com/?q=MEGAドン・キホーテ渋谷本店', style:'' }
   ]},
   { day:7, date:'4/17', weekday:'五', theme:'上野・原宿・購物衝刺', items:[
     { id:'d7-1', time:'09:30', emoji:'🌳', place:'上野公園', activity:'公園・美術館・2h', note:'兩美術館可選', address:'〒110-8716 東京都台東区上野公園', transport:'飯店步行約 10 分，JR 上野站公園口出站即達。', maps:'https://maps.google.com/?q=上野公園', style:'' },
     { id:'d7-2', time:'11:30', emoji:'🥩', place:'ねぎし 上野店', activity:'厚切烤牛舌定食・1h', note:'', address:'〒110-0005 東京都台東区上野6-14-4 レフ上野 B1F', transport:'上野公園步行約 5 分。', maps:'https://maps.google.com/?q=ねぎし+上野店', style:'' },
     { id:'d7-3', time:'12:30', emoji:'🏕️', place:'mont-bell 上野店', activity:'戶外用品・1h', note:'東京最大分店', address:'〒110-0005 東京都台東区上野3-19-3 上野フロンティアタワー2F', transport:'JR 上野站步行約 1 分，上野フロンティアタワー 2F。', maps:'https://maps.google.com/?q=モンベル+上野店', style:'' },
-    { id:'d7-4', time:'13:45', emoji:'🥞', place:'neel 原宿・可麗餅', activity:'30 分', note:'梨子圖案標誌', address:'〒150-0001 東京都渋谷区神宮前1-14-30', transport:'上野站搭 JR 山手線至原宿站，竹下口出站步行約 3 分。', maps:'https://maps.google.com/?q=neel原宿', style:'' },
-    { id:'d7-5', time:'14:15', emoji:'👕', place:'BEAMS 原宿', activity:'服飾・2h', note:'神宮前一帶多店', address:'〒150-0001 東京都渋谷区神宮前3-25-15', transport:'原宿站步行約 5 分，神宮前エリア。', maps:'https://maps.google.com/?q=BEAMS+原宿', style:'' },
-    { id:'d7-6', time:'16:15', emoji:'🏊', place:'Speedo / arena 原宿', activity:'泳具・1.5h', note:'旗艦店', address:'〒150-0001 東京都渋谷区神宮前（キャットストリート）', transport:'BEAMS 附近，神宮前キャットストリート步行即達。', maps:'https://maps.google.com/?q=スピード+アリーナ+原宿+神宮前', style:'' }
+    { id:'d7-4', time:'13:30', emoji:'🥞', place:'neel 原宿・可麗餅', activity:'15 分', note:'梨子圖案標誌', address:'〒150-0001 東京都渋谷区神宮前1-14-30', transport:'上野站搭 JR 山手線至原宿站，竹下口出站步行約 3 分。', maps:'https://maps.google.com/?q=neel原宿', style:'' },
+    { id:'d7-5', time:'13:45', emoji:'👕', place:'BEAMS 原宿', activity:'服飾・1h', note:'神宮前一帶多店', address:'〒150-0001 東京都渋谷区神宮前3-25-15', transport:'原宿站步行約 5 分，神宮前エリア。', maps:'https://maps.google.com/?q=BEAMS+原宿', style:'' },
+    { id:'d7-sky', time:'15:00', emoji:'🌇', place:'SHIBUYA SKY', activity:'展望台・1.5h', note:'⚠️ 已預約 15:00 入場', address:'〒150-6145 東京都渋谷区渋谷2-24-12 渋谷スクランブルスクエア 46F', transport:'原宿站搭 JR 山手線一站至澀谷站，連通渋谷スクランブルスクエア 14F 售票後搭電梯至 46F。', maps:'https://maps.google.com/?q=SHIBUYA+SKY+渋谷スクランブルスクエア', style:'highlight' },
+    { id:'d7-6', time:'16:30', emoji:'🏊', place:'Speedo / arena 原宿', activity:'泳具・1.5h', note:'旗艦店', address:'〒150-0001 東京都渋谷区神宮前（キャットストリート）', transport:'澀谷站搭 JR 山手線至原宿站，神宮前キャットストリート步行即達。', maps:'https://maps.google.com/?q=スピード+アリーナ+原宿+神宮前', style:'' }
   ]},
   { day:8, date:'4/18', weekday:'六', theme:'回家！', items:[
     { id:'d8-1', time:'09:00', emoji:'🧳', place:'相鐵 FRESA INN 退房', activity:'收拾・1h', note:'', address:'〒110-0005 東京都台東区上野5-2-4', transport:'退房後步行至京成上野站搭乘 Skyliner。', maps:'https://maps.google.com/?q=相鉄フレッサイン東京上野御徒町', style:'' },
@@ -670,9 +747,10 @@ function escHtml(s) { return (s||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;'
 
 // =================== TABS ===================
 function switchTab(name) {
-  document.querySelectorAll('.tab').forEach((t,i) => t.classList.toggle('active',['itinerary','expense','stats'][i]===name));
+  document.querySelectorAll('.tab').forEach((t,i) => t.classList.toggle('active',['itinerary','expense','stats','shop','notes'][i]===name));
   document.querySelectorAll('.page').forEach(p => p.classList.toggle('active',p.id==='page-'+name));
   if(name==='stats') renderStats();
+  if(name==='shop') renderShop();
 }
 
 // =================== PEOPLE ===================
@@ -722,6 +800,11 @@ function toggleSplitPerson(name){
 // CURRENCY
 function renderCurrencyGrid(){
   const g=document.getElementById('currency-grid'); if(!g) return;
+  const cur=CURRENCIES.find(c=>c.code===appState.tripCurrency)||CURRENCIES[0];
+  // compact display
+  const disp=document.getElementById('curr-selected-display');
+  if(disp) disp.innerHTML=`<span class="curr-selected-flag">${cur.flag}</span><div class="curr-selected-info"><div class="curr-selected-code">${cur.code}</div><div class="curr-selected-name">${cur.name}</div></div>`;
+  // grid (only fill when visible)
   g.innerHTML=CURRENCIES.map(c=>`
     <div class="curr-cell ${c.code===appState.tripCurrency?'active':''}" onclick="setTripCurrency('${c.code}')">
       <span class="curr-flag">${c.flag}</span>${c.code}<br><span style="font-weight:400;opacity:0.7">${c.name}</span>
@@ -732,11 +815,21 @@ function renderCurrencyGrid(){
   document.getElementById('mode-home').classList.toggle('active',appState.inputInHome);
   document.getElementById('amount-label').textContent=`金額 (${appState.inputInHome?'TWD':appState.tripCurrency})`;
 }
+function toggleCurrGrid(){
+  const g=document.getElementById('currency-grid');
+  const btn=document.querySelector('.curr-change-btn');
+  const open=g.style.display==='none';
+  g.style.display=open?'grid':'none';
+  btn.textContent=open?'收起 ▴':'更換貨幣 ▾';
+}
 function setTripCurrency(code){
   appState.tripCurrency=code;
   const preset=CURRENCIES.find(c=>c.code===code);
   if(preset) appState.rate=preset.rate;
   saveState(); renderCurrencyGrid();
+  // 選完自動收起
+  document.getElementById('currency-grid').style.display='none';
+  document.querySelector('.curr-change-btn').textContent='更換貨幣 ▾';
 }
 function setInputMode(inHome){ appState.inputInHome=inHome; saveState(); renderCurrencyGrid(); }
 function saveRate(){ appState.rate=parseFloat(document.getElementById('rate-input').value)||1; saveState(); }
@@ -1027,6 +1120,97 @@ function downloadAttachment(id, idx) {
   const att = (item.attachments||[])[idx];
   if (!att) return;
   const a = document.createElement('a'); a.href = att.data; a.download = att.name; a.click();
+}
+
+// =================== SHOPPING LIST ===================
+const SHOP_KEY = 'tabi_shop';
+let shopState = JSON.parse(localStorage.getItem(SHOP_KEY) || 'null') || { cats: [
+  { id:'s1', name:'💄 美妝保養', items:[
+    { id:'si101', text:'auxparadis 香水', note:'', checked:false },
+    { id:'si102', text:'FUEGUIA 1833 Ginza', note:'銀座', checked:false }
+  ]},
+  { id:'s2', name:'💊 藥妝', items:[] },
+  { id:'s3', name:'🍫 零食', items:[] },
+  { id:'s4', name:'👕 服飾', items:[] },
+  { id:'s5', name:'🎮 電器 3C', items:[] },
+  { id:'s6', name:'⛷️ 戶外用品', items:[
+    { id:'si601', text:'東京 arena 旗艦店', note:'', checked:false }
+  ]},
+  { id:'s7', name:'🎁 其他', items:[
+    { id:'si701', text:'國際桌球社 涉谷店', note:'', checked:false }
+  ]}
+]};
+
+function saveShop(){ localStorage.setItem(SHOP_KEY, JSON.stringify(shopState)); }
+
+function renderShop(){
+  const root = document.getElementById('shop-root');
+  if(!root) return;
+  root.innerHTML = shopState.cats.map(cat => {
+    const total = cat.items.length;
+    const done = cat.items.filter(i=>i.checked).length;
+    const progress = total ? `${done}/${total}` : '';
+    return `<div class="shop-cat">
+      <div class="shop-cat-header">
+        <span>${cat.name}</span>
+        <span class="shop-progress">${progress}</span>
+      </div>
+      <div class="shop-cat-body">
+        ${cat.items.map(item => `
+          <div class="shop-item" id="si-${item.id}">
+            <div class="shop-checkbox ${item.checked?'checked':''}" onclick="toggleShopItem('${cat.id}','${item.id}')"></div>
+            <div class="shop-item-text ${item.checked?'done':''}">${escHtml(item.text)}${item.note?`<div class="shop-item-note">${escHtml(item.note)}</div>`:''}</div>
+            <button class="shop-item-del" onclick="deleteShopItem('${cat.id}','${item.id}')">✕</button>
+          </div>`).join('')}
+        <div class="shop-add-row">
+          <input class="shop-add-input" id="si-input-${cat.id}" placeholder="新增項目…" onkeydown="if(event.key==='Enter')addShopItem('${cat.id}')">
+          <button class="shop-add-btn" onclick="addShopItem('${cat.id}')">＋</button>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function toggleShopItem(catId, itemId){
+  const cat = shopState.cats.find(c=>c.id===catId);
+  const item = cat.items.find(i=>i.id===itemId);
+  item.checked = !item.checked;
+  saveShop(); renderShop();
+}
+
+function addShopItem(catId){
+  const input = document.getElementById('si-input-'+catId);
+  const text = input.value.trim();
+  if(!text) return;
+  const cat = shopState.cats.find(c=>c.id===catId);
+  cat.items.push({ id:'i'+Date.now(), text, note:'', checked:false });
+  saveShop(); renderShop();
+  setTimeout(()=>{ const el=document.getElementById('si-input-'+catId); if(el) el.focus(); },50);
+}
+
+function deleteShopItem(catId, itemId){
+  const cat = shopState.cats.find(c=>c.id===catId);
+  cat.items = cat.items.filter(i=>i.id!==itemId);
+  saveShop(); renderShop();
+}
+
+function clearDoneItems(){
+  if(!confirm('清除所有已勾選的項目？')) return;
+  shopState.cats.forEach(c=>{ c.items = c.items.filter(i=>!i.checked); });
+  saveShop(); renderShop();
+}
+
+function openAddShopCat(){
+  const body = `<div class="form-group"><label class="form-label">分類名稱（可加 emoji）</label><input class="form-input" id="sc-name" placeholder="例：🎀 配件"></div>
+  <button class="btn-save" onclick="saveAddShopCat()">＋ 新增分類</button>`;
+  openSheet('＋ 新增購物分類', body);
+}
+
+function saveAddShopCat(){
+  const name = document.getElementById('sc-name').value.trim();
+  if(!name){ alert('請輸入分類名稱'); return; }
+  shopState.cats.push({ id:'s'+Date.now(), name, items:[] });
+  saveShop(); renderShop(); closeSheet();
 }
 
 // =================== DAY MANAGEMENT ===================
