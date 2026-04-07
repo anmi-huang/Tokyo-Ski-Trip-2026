@@ -1555,7 +1555,7 @@ async function init() {
   }
   migrateAppState();
 
-  const SHOP_VER = 3;
+  const SHOP_VER = 4;
   const fbShop = shopSnap.val();
   if (fbShop && fbShop.version === SHOP_VER) {
     // 版本符合，直接用 Firebase 資料
