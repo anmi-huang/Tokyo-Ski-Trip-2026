@@ -266,7 +266,7 @@
 <body>
 
 <!-- LOGIN OVERLAY -->
-<div class="login-overlay" id="login-overlay">
+<div class="login-overlay hide" id="login-overlay">
   <div class="login-box">
     <div style="display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:4px;">
       <svg width="40" height="40" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -590,6 +590,7 @@ auth.onAuthStateChanged(async user => {
     return;
   }
   overlay.classList.add('hide');
+  overlay.style.display = 'none';
   // 讀取自訂 profile
   const snap = await db.ref('users/' + user.uid).once('value');
   const profile = snap.val();
