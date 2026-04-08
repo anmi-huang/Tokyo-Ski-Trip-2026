@@ -501,16 +501,22 @@ let _initComplete = false;
 let currentUser = null;
 
 // =================== AUTH ===================
-auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL);
+// Safari 私密瀏覽 / ITP 會讓 LOCAL persistence 失敗，逐級退回避免登入卡住
+auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL)
+  .catch(() => auth.setPersistence(firebase.auth.Auth.Persistence.SESSION))
+  .catch(() => auth.setPersistence(firebase.auth.Auth.Persistence.NONE))
+  .catch(() => {});
 
 function signInWithGoogle() {
   const provider = new firebase.auth.GoogleAuthProvider();
-  const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
-  if (isSafari) {
-    auth.signInWithRedirect(provider);
-  } else {
-    auth.signInWithPopup(provider).catch(() => auth.signInWithRedirect(provider));
-  }
+  provider.setCustomParameters({ prompt: 'select_account' });
+  // 一律先試 popup（Safari 對 redirect 的 ITP 限制比 popup 還麻煩），失敗再退回 redirect
+  auth.signInWithPopup(provider).catch(err => {
+    console.warn('popup failed, fallback to redirect', err);
+    auth.signInWithRedirect(provider).catch(e => {
+      alert('登入失敗：' + (e?.message || e));
+    });
+  });
 }
 function signOut() {
   if (!confirm('確定要登出嗎？')) return;
@@ -520,13 +526,27 @@ function signOut() {
 function renderUserChip() {
   const wrap = document.getElementById('user-chip-wrap');
   if (!wrap || !currentUser) return;
+  // 以 auth.currentUser.uid 為準，避免顯示到別人的頭貼
+  const authUid = auth.currentUser?.uid;
+  if (authUid && authUid !== currentUser.uid) return;
   wrap.innerHTML = `<div class="user-chip" onclick="openEditProfile()">
     <img class="user-avatar" src="${currentUser.photoURL||'https://api.dicebear.com/7.x/thumbs/svg?seed='+currentUser.uid}" onerror="this.src='https://api.dicebear.com/7.x/thumbs/svg?seed=${currentUser.uid}'">
   </div>`;
 }
 
-function openEditProfile() {
-  const u = currentUser;
+async function openEditProfile() {
+  // 一律以 firebase auth 當下使用者為準，避免 in-memory 殘留別人的資料
+  const authUser = auth.currentUser;
+  if (!authUser) return;
+  const snap = await db.ref('users/' + authUser.uid).once('value');
+  const profile = snap.val() || {};
+  const u = {
+    uid: authUser.uid,
+    email: authUser.email,
+    displayName: profile.displayName || authUser.displayName || '',
+    photoURL: profile.photoURL || authUser.photoURL || ''
+  };
+  currentUser = u;
   const body = `
     <div style="text-align:center">
       <div class="profile-photo-wrap">
@@ -580,7 +600,13 @@ async function saveProfile() {
   closeSheet();
 }
 
-auth.getRedirectResult().catch(() => {});
+// 把 redirect 結果的錯誤顯示出來，否則 Safari 失敗時使用者只看到永遠的登入畫面
+auth.getRedirectResult().catch(err => {
+  console.error('getRedirectResult error', err);
+  if (err && err.code && err.code !== 'auth/no-auth-event') {
+    alert('登入失敗：' + err.message);
+  }
+});
 
 auth.onAuthStateChanged(async user => {
   const overlay = document.getElementById('login-overlay');
@@ -1027,7 +1053,7 @@ function renderExpenses(){
   c.innerHTML=[...list].reverse().map(e=>`
     <div class="expense-item">
       <div class="exp-top"><div><div class="exp-name">${e.name}</div><div class="exp-meta">${e.date} · 付款：${e.payer}</div></div>
-      <div style="display:flex;align-items:center;gap:6px"><div class="exp-amount">${currSymbol()}${e.amount.toLocaleString()} <span style="font-size:0.72rem;opacity:0.6">(NT$${toTWD(e.amount).toLocaleString()})</span></div><button class="exp-del" onclick="if(confirm('確定刪除這筆帳？'))deleteExpense(${e.id})">🗑️</button></div></div>
+      <div style="display:flex;align-items:center;gap:6px"><div class="exp-amount">${currSymbol()}${e.amount.toLocaleString()} <span style="font-size:0.72rem;opacity:0.6">(NT$${toTWD(e.amount).toLocaleString()})</span></div><button class="exp-del" onclick="deleteExpense(${e.id})">🗑️</button></div></div>
       <div class="exp-tags"><span class="tag tag-cat">${e.cat}</span>${e.split.map(p=>`<span class="tag tag-person">${p}</span>`).join('')}${e.note?`<span class="tag" style="background:#f0f0f0;color:#666">${e.note}</span>`:''}</div>
     </div>`).join('');
 }
