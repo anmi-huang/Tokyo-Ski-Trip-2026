@@ -807,7 +807,7 @@ function openItemInfo(id, dayNum) {
       <div class="ticket-thumb-row">
         ${tickets.map((a,i) => a.type && a.type.startsWith('image/')
           ? `<img class="ticket-thumb" src="${a.data}" alt="${a.name}" onclick="openLightbox('${id}',${i})">`
-          : `<div class="ticket-thumb-pdf" onclick="downloadAttachment('${id}',${i})">📄<br>${a.name}</div>`
+          : `<div class="ticket-thumb-pdf" onclick="viewAttachment('${id}',${i})">📄<br>${a.name}</div>`
         ).join('')}
       </div>
     </div></div>` : '';
@@ -1309,6 +1309,34 @@ function downloadAttachment(id, idx) {
   const att = (item.attachments||[])[idx];
   if (!att) return;
   const a = document.createElement('a'); a.href = att.data; a.download = att.name; a.click();
+}
+
+// 直接在新分頁開啟附件（PDF / 圖片），不下載。
+// data: URL 在 iOS Safari 用 window.open 會被擋，所以先轉成 Blob URL。
+function viewAttachment(id, idx) {
+  const item = appState.days.flatMap(d=>d.items).find(i=>i.id===id);
+  const att = (item.attachments||[])[idx];
+  if (!att) return;
+  try {
+    // 把 dataURL 轉成 blob
+    const [meta, b64] = att.data.split(',');
+    const mime = (meta.match(/data:([^;]+)/) || [,'application/octet-stream'])[1];
+    const bin = atob(b64);
+    const bytes = new Uint8Array(bin.length);
+    for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+    const blob = new Blob([bytes], { type: mime });
+    const url = URL.createObjectURL(blob);
+    const w = window.open(url, '_blank');
+    if (!w) {
+      // 被擋彈窗就退回下載
+      downloadAttachment(id, idx);
+    }
+    // 過一段時間釋放 blob URL
+    setTimeout(() => URL.revokeObjectURL(url), 60000);
+  } catch (e) {
+    console.error('viewAttachment failed', e);
+    downloadAttachment(id, idx);
+  }
 }
 
 // =================== SHOPPING LIST ===================
