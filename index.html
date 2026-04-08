@@ -610,12 +610,10 @@ auth.getRedirectResult().catch(err => {
 
 auth.onAuthStateChanged(async user => {
   const overlay = document.getElementById('login-overlay');
-  if (!user) {
-    overlay.classList.remove('hide');
-    return;
-  }
+  // 暫時關閉登入限制：一律隱藏登入畫面，沒登入也能用
   overlay.classList.add('hide');
   overlay.style.display = 'none';
+  if (!user) return;
   // 讀取自訂 profile
   const snap = await db.ref('users/' + user.uid).once('value');
   const profile = snap.val();
